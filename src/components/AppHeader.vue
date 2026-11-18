@@ -1,0 +1,225 @@
+<template>
+  <header class="header">
+    <div class="header-inner">
+      <!-- 品牌标识 -->
+      <div class="brand-section" @click="$router.push('/home')">
+        <div class="duck-logo" title="随风 Club">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C7.58 2 4 5.58 4 10C4 12.38 5.05 14.51 6.71 15.97C6.26 16.59 5.67 17.07 5 17.4C6.54 17.9 8.23 18.15 10 18.06V20C10 20.55 10.45 21 11 21H13C13.55 21 14 20.55 14 20V18C15.8 17.86 17.49 17.44 19 16.7C18.33 16.37 17.74 15.89 17.29 15.27C18.95 13.81 20 11.68 20 10C20 5.58 16.42 2 12 2Z" fill="#ffffff"></path>
+            <circle cx="9" cy="9" r="1.5" fill="#1e293b"></circle>
+            <path d="M11 12C12.5 12 15 13 14 15C13 16 10 15 9.5 13.5" stroke="#ff7a45" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+        </div>
+        <div class="brand-title">
+          随风 Club
+        </div>
+      </div>
+
+      <!-- 核心功能导航 -->
+      <ul class="nav-links">
+        <li
+          class="nav-item"
+          :class="{ active: $route.path === '/home' }"
+          @click="$router.push('/home')"
+        >
+          首页
+        </li>
+        <li
+          class="nav-item"
+          :class="{ active: $route.path === '/subject' }"
+          @click="$router.push('/subject')"
+        >
+          题库大全
+        </li>
+        <li
+          class="nav-item"
+          :class="{ active: $route.path === '/practice' }"
+          @click="$router.push('/practice')"
+        >
+          在线考场
+        </li>
+        <li
+          class="nav-item"
+          :class="{ active: $route.path === '/interview' }"
+          @click="$router.push('/interview')"
+        >
+          AI 模拟面试
+        </li>
+        <li
+          class="nav-item"
+          :class="{ active: $route.path === '/circle' }"
+          @click="$router.push('/circle')"
+        >
+          技术圈子
+        </li>
+      </ul>
+
+      <!-- 全局搜索框 -->
+      <div class="header-search">
+        <div class="search-input-wrapper" @click="subjectStore.openSearchModal">
+          <span class="search-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="搜题目、知识点、大厂考点..."
+            readonly
+          />
+          <span class="search-shortcut">⌘K</span>
+        </div>
+      </div>
+
+      <!-- 右侧操作与个人中心 -->
+      <div class="header-actions">
+        <!-- 互动消息通知按钮 -->
+        <button class="btn-icon-nav" title="互动消息通知" @click="$router.push('/circle')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="notice-dot"></span>
+        </button>
+
+        <!-- 用户名片与下拉菜单 -->
+        <div class="user-menu-container">
+          <div
+            v-if="authStore.isLoggedIn"
+            class="user-profile"
+            @click="dropdownOpen = !dropdownOpen"
+            title="个人中心"
+          >
+            <img v-if="authStore.avatar" :src="authStore.avatar" class="avatar-img" />
+            <div v-else class="avatar">{{ userInitial }}</div>
+            <span class="user-name">{{ authStore.nickname }}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div
+            v-else
+            class="user-profile login-trigger"
+            @click="authStore.openLoginModal"
+          >
+            <img :src="authStore.avatar" class="avatar-img" />
+            <span class="user-name">登录 / 注册</span>
+          </div>
+
+          <!-- 用户下拉浮层 -->
+          <div v-if="dropdownOpen && authStore.isLoggedIn" class="user-dropdown-menu" @click.outside="dropdownOpen = false">
+            <div class="dropdown-item" @click="goToProfile">
+              <span>👤 个人主页</span>
+            </div>
+            <div class="dropdown-item" @click="goToAdmin">
+              <span>⚙️ 后台管理系统 (/base)</span>
+            </div>
+            <div class="dropdown-item" @click="handleCheckin">
+              <span>{{ authStore.checkedIn ? '🔥 已打卡 (连胜42天)' : '🔥 今日打卡 +1' }}</span>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item danger" @click="handleLogout">
+              <span>🚪 退出登录</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useSubjectStore } from '@/stores/subject'
+
+const router = useRouter()
+const authStore = useAuthStore()
+const subjectStore = useSubjectStore()
+
+const dropdownOpen = ref(false)
+
+const userInitial = computed(() => {
+  const name = authStore.nickname || '随'
+  return name.charAt(0)
+})
+
+function goToProfile() {
+  dropdownOpen.value = false
+  router.push('/profile')
+}
+
+function goToAdmin() {
+  dropdownOpen.value = false
+  router.push('/base')
+}
+
+function handleCheckin() {
+  authStore.toggleCheckIn()
+  dropdownOpen.value = false
+}
+
+function handleLogout() {
+  dropdownOpen.value = false
+  authStore.logout()
+}
+</script>
+
+<style scoped>
+.user-menu-container {
+  position: relative;
+}
+.login-trigger:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-border);
+}
+.user-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  min-width: 160px;
+  padding: 6px 0;
+  z-index: 200;
+  animation: fadeIn 0.15s ease;
+}
+.dropdown-item {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text-regular);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+}
+.dropdown-item:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+.dropdown-item.danger:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+.avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+  display: block;
+}
+</style>

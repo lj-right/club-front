@@ -29,9 +29,8 @@
           </div>
 
           <div v-else-if="circleStore.filteredMoments.length === 0" class="empty-moments">
-            <div style="font-size: 32px; margin-bottom: 8px;">💬</div>
-            <div style="font-size: 14px; color: var(--text-muted);">当前频道暂无动态，快来抢先发布吧！</div>
-            <button class="btn btn-primary" style="margin-top: 12px;" @click="circleStore.openMomentModal">
+            <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">当前频道暂无动态，快来抢先发布吧！</div>
+            <button class="btn btn-primary" @click="circleStore.openMomentModal">
               立即发布
             </button>
           </div>
@@ -39,48 +38,74 @@
           <div
             v-for="m in circleStore.filteredMoments"
             :key="m.id"
+            :id="'moment-' + m.id"
             class="moment-card"
           >
             <!-- 头部作者信息 -->
             <div class="m-header">
-              <img
-                :src="m.avatar || defaultAvatar"
-                class="m-avatar"
-                alt="avatar"
-                @error="(e) => handleAvatarError(e, m.author)"
-              />
-              <div class="m-user-info">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span class="m-author">{{ m.author }}</span>
-                  <span v-if="m.badge" class="m-badge">{{ m.badge }}</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted);">
-                  <span>{{ m.time }}</span>
-                  <span>•</span>
-                  <span class="m-channel-tag">#{{ m.channelName }}</span>
+              <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                <img
+                  :src="m.avatar || defaultAvatar"
+                  class="m-avatar"
+                  alt="avatar"
+                  @error="(e) => handleAvatarError(e, m.author)"
+                />
+                <div class="m-user-info">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="m-author">{{ m.author }}</span>
+                    <span v-if="m.badge" class="m-badge">{{ m.badge }}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted);">
+                    <span>{{ m.time }}</span>
+                    <span>•</span>
+                    <span class="m-channel-tag">#{{ m.channelName }}</span>
+                  </div>
                 </div>
               </div>
+              <button
+                v-if="canDeleteMoment(m)"
+                class="m-del-btn"
+                title="删除动态"
+                @click.stop="handleDeleteMoment(m.id)"
+              >
+                ✕
+              </button>
             </div>
 
-            <!-- 正文内容 -->
-            <p class="m-content">{{ m.content }}</p>
+            <!-- 正文内容 (支持超长文本折叠/展开，点击进入详情页) -->
+            <div class="m-content-wrap">
+              <p
+                class="m-content"
+                :class="{ 'clamped': isLongContent(m.content) && !isExpanded(m.id) }"
+                @click="goToDetail(m.id)"
+              >
+                {{ m.content }}
+              </p>
+              <button
+                v-if="isLongContent(m.content)"
+                class="btn-expand"
+                @click.stop="toggleExpand(m.id)"
+              >
+                {{ isExpanded(m.id) ? '收起' : '展开全文' }}
+              </button>
+            </div>
 
             <!-- 话题标签 -->
-            <div v-if="m.tags?.length" class="m-tags">
+            <div v-if="m.tags?.length" class="m-tags" @click="goToDetail(m.id)">
               <span v-for="tag in m.tags" :key="tag" class="m-tag-pill">
                 {{ tag }}
               </span>
             </div>
 
             <!-- 附带图片列表 -->
-            <div v-if="m.images?.length" class="m-images-grid">
+            <div v-if="m.images?.length" class="m-images-grid" @click="goToDetail(m.id)">
               <img
                 v-for="(img, idx) in m.images"
                 :key="idx"
                 :src="img"
                 class="m-img"
                 alt="image"
-                @error="(e) => (e.target.style.display = 'none')"
+                @error="handleImageError"
               />
             </div>
 
@@ -90,124 +115,23 @@
                 <button
                   class="m-action-btn"
                   :class="{ liked: m.liked }"
-                  @click="circleStore.toggleLikeMoment(m.id)"
+                  @click.stop="circleStore.toggleLikeMoment(m.id)"
                 >
                   <span>{{ m.liked ? '❤️' : '🤍' }}</span>
                   <span>{{ m.likes }} 赞</span>
                 </button>
-                <button class="m-action-btn" @click="toggleComment(m.id)">
+                <!-- 点击评论按钮直接进入详情页面查看评论与多级回复 -->
+                <button class="m-action-btn" @click="goToDetail(m.id)">
+                  <span>💬</span>
                   <span>{{ getCommentCount(m) }} 条评论</span>
                 </button>
-                <button class="m-action-btn" @click="shareMoment(m)">
+                <button class="m-action-btn" @click.stop="shareMoment(m)">
                   <span>🔗</span>
                   <span>分享</span>
                 </button>
               </div>
             </div>
-
-            <!-- 展开的评论区 -->
-            <div v-if="activeCommentMomentId === m.id" class="comment-section">
-              <div class="comment-input-wrap">
-                <input
-                  v-model="commentText"
-                  type="text"
-                  placeholder="写下你的真实想法，与作者交流技术细节..."
-                  class="comment-input"
-                  :disabled="isSubmittingComment"
-                  @keyup.enter="submitComment(m)"
-                />
-                <button
-                  class="btn btn-primary"
-                  style="padding: 6px 14px; font-size: 12px;"
-                  :disabled="isSubmittingComment || !commentText.trim()"
-                  @click="submitComment(m)"
-                >
-                  {{ isSubmittingComment ? '发送中...' : '回复' }}
-                </button>
-              </div>
-
-              <!-- 评论加载中 -->
-              <div v-if="circleStore.loadingCommentsMap[m.id]" class="comments-loading">
-                加载评论列表中...
-              </div>
-
-              <!-- 评论列表 -->
-              <div v-else class="comment-list">
-                <div
-                  v-for="c in (circleStore.momentCommentsMap[m.id] || [])"
-                  :key="c.id"
-                  class="comment-item"
-                >
-                  <img
-                    :src="c.avatar || defaultAvatar"
-                    class="c-avatar-mini"
-                    alt="avatar"
-                    @error="(e) => handleAvatarError(e, c.user)"
-                  />
-                  <div class="c-body">
-                    <div class="c-header-line">
-                      <span class="c-user">{{ c.user }}</span>
-                      <span class="c-time">{{ c.time }}</span>
-                    </div>
-                    <div class="c-text">{{ c.text }}</div>
-                  </div>
-                </div>
-
-                <div
-                  v-if="!circleStore.momentCommentsMap[m.id] || circleStore.momentCommentsMap[m.id].length === 0"
-                  class="no-comments"
-                >
-                  暂无评论，快来抢沙发吧~
-                </div>
-              </div>
-            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 发表动态弹窗 (Publish Modal) -->
-    <div v-if="circleStore.momentModalOpen" class="modal-overlay" @click.self="circleStore.closeMomentModal">
-      <div class="moment-modal">
-        <div class="modal-header">
-          <h3 class="modal-title">发表圈子技术动态</h3>
-          <button class="close-btn" @click="circleStore.closeMomentModal">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label">选择频道:</label>
-            <div class="channel-picker">
-              <button
-                v-for="ch in publishChannels"
-                :key="ch.id"
-                class="pick-btn"
-                :class="{ active: newMomentChannel === ch.id }"
-                @click="newMomentChannel = ch.id"
-              >
-                {{ ch.name }}
-              </button>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">动态内容:</label>
-            <textarea
-              v-model="newMomentContent"
-              rows="5"
-              placeholder="分享今天的技术感悟、生产环境排坑记录或面试真题..."
-              class="moment-textarea"
-            ></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="circleStore.closeMomentModal">取消</button>
-          <button
-            class="btn btn-primary"
-            :disabled="isPublishing || !newMomentContent.trim()"
-            @click="handlePublish"
-          >
-            {{ isPublishing ? '发布中...' : '确认发布' }}
-          </button>
         </div>
       </div>
     </div>
@@ -215,12 +139,54 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useCircleStore } from '@/stores/circle'
+import { useAuthStore } from '@/stores/auth'
 import { getUserAvatar } from '@/utils/avatars'
 
+const route = useRoute()
+const router = useRouter()
 const circleStore = useCircleStore()
-const defaultAvatar = 'http://127.0.0.1:9000/user/avatar/default_avatar.jpg'
+const authStore = useAuthStore()
+
+const defaultAvatar = 'http://127.0.0.1:9005/user/avatar/default_avatar.jpg'
+const expandedMoments = ref(new Set())
+
+function toggleExpand(id) {
+  if (expandedMoments.value.has(id)) {
+    expandedMoments.value.delete(id)
+  } else {
+    expandedMoments.value.add(id)
+  }
+}
+
+function isExpanded(id) {
+  return expandedMoments.value.has(id)
+}
+
+function isLongContent(content) {
+  return content && content.length > 130
+}
+
+function handleImageError(e) {
+  e.target.style.display = 'none'
+  const parent = e.target.parentElement
+  if (parent && parent.querySelectorAll('img:not([style*="display: none"])').length === 0) {
+    parent.style.display = 'none'
+  }
+}
+
+function canDeleteMoment(m) {
+  const current = authStore.userInfo?.userName || authStore.userInfo?.nickName
+  return current === m.author || current === 'admin' || current === 'suifeng'
+}
+
+async function handleDeleteMoment(momentId) {
+  if (confirm('确定要删除这条动态吗？')) {
+    await circleStore.deleteMoment(momentId)
+  }
+}
 
 function handleAvatarError(e, name) {
   const fallback = getUserAvatar(name)
@@ -229,82 +195,22 @@ function handleAvatarError(e, name) {
   }
 }
 
-const activeCommentMomentId = ref(null)
-const commentText = ref('')
-const isSubmittingComment = ref(false)
-
-const newMomentChannel = ref('tech')
-const newMomentContent = ref('')
-const isPublishing = ref(false)
-
-const publishChannels = computed(() => {
-  return circleStore.channels.filter((c) => c.id !== 'all')
-})
-
 function getCommentCount(m) {
   if (circleStore.momentCommentsMap[m.id]) {
-    return circleStore.momentCommentsMap[m.id].length
+    const list = circleStore.momentCommentsMap[m.id]
+    return list.reduce((acc, c) => acc + 1 + (c.children?.length || 0), 0)
   }
   return m.replyCount || 0
 }
 
-async function toggleComment(id) {
-  if (activeCommentMomentId.value === id) {
-    activeCommentMomentId.value = null
-  } else {
-    activeCommentMomentId.value = id
-    commentText.value = ''
-    // Fetch live comments from backend database
-    await circleStore.fetchComments(id)
-  }
-}
-
-async function submitComment(moment) {
-  const text = commentText.value.trim()
-  if (!text) return
-
-  isSubmittingComment.value = true
-  try {
-    const res = await circleStore.addComment({
-      momentId: moment.id,
-      content: text
-    })
-
-    if (res && res.success) {
-      commentText.value = ''
-    } else {
-      alert(res?.message || '评论发送失败')
-    }
-  } finally {
-    isSubmittingComment.value = false
-  }
-}
-
-async function handlePublish() {
-  const content = newMomentContent.value.trim()
-  if (!content) return
-
-  isPublishing.value = true
-  try {
-    const res = await circleStore.publishMoment({
-      content,
-      channel: newMomentChannel.value
-    })
-
-    if (res && res.success) {
-      newMomentContent.value = ''
-      circleStore.closeMomentModal()
-    } else {
-      alert(res?.message || '发布失败')
-    }
-  } finally {
-    isPublishing.value = false
-  }
+// 进入该动态的评论与回复详情页面
+function goToDetail(momentId) {
+  router.push(`/circle/detail/${momentId}`)
 }
 
 function shareMoment(m) {
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(window.location.href)
+    navigator.clipboard.writeText(window.location.origin + '/circle/detail/' + m.id)
     alert('动态链接已复制到剪贴板！')
   } else {
     alert('已分享！')
@@ -312,8 +218,15 @@ function shareMoment(m) {
 }
 
 onMounted(async () => {
+  // 如果携带了 momentId 参数（例如外部链接或旧通知），直接重定向至详情页面
+  if (route.query.momentId) {
+    router.replace(`/circle/detail/${route.query.momentId}`)
+    return
+  }
+
   await circleStore.fetchCircles()
   await circleStore.fetchMoments()
+  await circleStore.checkUnread()
 })
 </script>
 
@@ -330,24 +243,24 @@ onMounted(async () => {
   background: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 10px 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .channel-tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ch-tab {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
-  padding: 6px 12px;
+  padding: 5px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .ch-tab:hover {
@@ -362,14 +275,14 @@ onMounted(async () => {
 }
 
 .publish-trigger-btn {
-  font-size: 13px;
-  padding: 6px 14px;
+  font-size: 12.5px;
+  padding: 5px 12px;
 }
 
 .moments-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .circle-loading,
@@ -377,20 +290,20 @@ onMounted(async () => {
   background: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 48px 24px;
+  padding: 36px 20px;
   text-align: center;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
 .spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #e2e8f0;
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid #e2e8f0;
   border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  margin: 0 auto 12px;
+  margin: 0 auto 10px;
 }
 
 @keyframes spin {
@@ -401,38 +314,56 @@ onMounted(async () => {
   background: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s;
+  padding: 12px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s;
+  margin: 0;
 }
 
 .moment-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .m-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.m-del-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.m-del-btn:hover {
+  color: #ef4444;
+  background: #fee2e2;
 }
 
 .m-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid #e2e8f0;
+  flex-shrink: 0;
 }
 
 .m-user-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .m-author {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--text-main);
 }
@@ -441,9 +372,10 @@ onMounted(async () => {
   font-size: 11px;
   background: #eff6ff;
   color: var(--primary);
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 0 5px;
+  border-radius: 3px;
   font-weight: 600;
+  line-height: 18px;
 }
 
 .m-channel-tag {
@@ -451,66 +383,109 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+.m-content-wrap {
+  margin-bottom: 8px;
+}
+
 .m-content {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13.5px;
+  line-height: 1.55;
   color: var(--text-regular);
-  margin-bottom: 12px;
+  margin-bottom: 0;
   white-space: pre-wrap;
+  cursor: pointer;
+}
+
+.m-content.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.btn-expand {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 3px;
+}
+
+.btn-expand:hover {
+  text-decoration: underline;
+}
+
+.m-content:hover {
+  color: var(--text-main);
 }
 
 .m-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
 }
 
 .m-tag-pill {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--primary);
   background: #f0f7ff;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 1px 6px;
+  border-radius: 3px;
 }
 
 .m-images-grid {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
+  cursor: pointer;
 }
 
 .m-img {
-  max-width: 240px;
-  max-height: 160px;
+  max-width: 200px;
+  max-height: 140px;
   border-radius: 6px;
   object-fit: cover;
   border: 1px solid #edf2f7;
+  cursor: zoom-in;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.m-img:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  border-color: var(--primary);
+  transform: none;
 }
 
 .m-footer {
-  border-top: 1px solid var(--border-color);
-  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 8px;
+  margin-top: 2px;
 }
 
 .m-actions {
   display: flex;
-  gap: 20px;
+  gap: 16px;
+  align-items: center;
 }
 
 .m-action-btn {
   background: none;
   border: none;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12.5px;
   display: flex;
   align-items: center;
   gap: 4px;
   cursor: pointer;
-  transition: all 0.2s;
-  padding: 4px 6px;
-  border-radius: 4px;
+  transition: all 0.15s;
+  padding: 2px 4px;
+  border-radius: 3px;
 }
 
 .m-action-btn:hover {
@@ -521,204 +496,5 @@ onMounted(async () => {
 .m-action-btn.liked {
   color: #ef4444;
   font-weight: 600;
-}
-
-/* 评论区 */
-.comment-section {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed var(--border-color);
-  background: #fafbfc;
-  border-radius: 6px;
-  padding: 12px;
-}
-
-.comment-input-wrap {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.comment-input {
-  flex: 1;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 13px;
-  outline: none;
-}
-
-.comment-input:focus {
-  border-color: var(--primary);
-}
-
-.comments-loading {
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: center;
-  padding: 8px 0;
-}
-
-.comment-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.comment-item {
-  display: flex;
-  gap: 8px;
-  font-size: 13px;
-  background: #ffffff;
-  padding: 8px 10px;
-  border-radius: 4px;
-  border: 1px solid #edf2f7;
-}
-
-.c-avatar-mini {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.c-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.c-header-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.c-user {
-  font-weight: 700;
-  color: var(--text-main);
-  font-size: 12px;
-}
-
-.c-time {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.c-text {
-  color: var(--text-regular);
-  line-height: 1.4;
-  font-size: 13px;
-}
-
-.no-comments {
-  font-size: 12px;
-  color: var(--text-muted);
-  padding: 12px 0;
-  text-align: center;
-}
-
-/* 发表弹窗 */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.moment-modal {
-  background: #ffffff;
-  border-radius: var(--radius-lg);
-  width: 100%;
-  max-width: 560px;
-  padding: 24px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.modal-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-main);
-  margin-bottom: 8px;
-}
-
-.channel-picker {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pick-btn {
-  background: #f1f5f9;
-  border: 1px solid transparent;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.pick-btn.active {
-  background: #eff6ff;
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.moment-textarea {
-  width: 100%;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 10px;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  box-sizing: border-box;
-  resize: vertical;
-}
-
-.moment-textarea:focus {
-  border-color: var(--primary);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 16px;
 }
 </style>

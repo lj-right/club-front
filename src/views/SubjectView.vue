@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <!-- 二级分类：技能与中间件 (Skills & Middlewares) - 必须且仅限本级展示高保真技术矢量SVG图标 -->
+    <!-- 二级分类：技能与中间件 (Skills & Middlewares) - 直接全量平铺展示 -->
     <div class="sub-category-bar">
       <div
         v-for="sub in subjectStore.currentSubCategoryList"
@@ -39,29 +39,6 @@
         </span>
         <span class="sub-name">{{ sub.name }}</span>
         <span class="sub-count">{{ sub.count }}题</span>
-      </div>
-    </div>
-
-    <!-- 三级分类：知识点标签 (Knowledge Point Labels) - 胶囊药丸式过滤标签，无图标规范 -->
-    <div v-if="displayLabels.length > 0" class="label-filter-bar">
-      <div class="label-filter-title">知识点标签:</div>
-      <div class="label-pills">
-        <span
-          v-for="lbl in displayLabels"
-          :key="lbl"
-          class="label-pill"
-          :class="{ active: subjectStore.selectedLabels.includes(lbl) }"
-          @click="subjectStore.toggleLabel(lbl)"
-        >
-          {{ lbl }}
-        </span>
-        <span
-          v-if="subjectStore.selectedLabels.length > 0"
-          class="label-clear"
-          @click="subjectStore.clearLabels"
-        >
-          ✕ 清空已选 ({{ subjectStore.selectedLabels.length }})
-        </span>
       </div>
     </div>
 
@@ -109,14 +86,14 @@
             :class="{ active: subjectStore.sortOrder === 'hot' }"
             @click="subjectStore.setSort('hot')"
           >
-            最热 🔥
+            最热
           </button>
           <button
             class="filter-btn"
             :class="{ active: subjectStore.sortOrder === 'latest' }"
             @click="subjectStore.setSort('latest')"
           >
-            最新 ⏱
+            最新
           </button>
         </div>
 
@@ -139,11 +116,7 @@
       <!-- 题目列表 -->
       <div class="questions-list">
         <div v-if="subjectStore.filteredQuestions.length === 0" class="empty-list">
-          <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
           <div style="font-size: 14px; color: var(--text-muted);">暂无符合当前筛选条件的题目</div>
-          <button class="btn btn-secondary" style="margin-top: 12px;" @click="resetFilters">
-            重置所有筛选
-          </button>
         </div>
 
         <div
@@ -169,9 +142,9 @@
             <div class="q-meta-left">
               <span class="author-tag">考题作者: {{ q.author || '随风' }}</span>
               <span class="meta-dot">•</span>
-              <span class="time-tag">更新于: {{ q.timeAgo || '2天前' }}</span>
+              <span class="time-tag">更新于: {{ q.timeAgo || '3天前' }}</span>
               <span class="meta-dot">•</span>
-              <span class="views-count">{{ q.views || '42.8k' }} 次研读</span>
+              <span class="views-count">{{ q.views != null ? q.views : 0 }} 次研读</span>
             </div>
           </div>
         </div>
@@ -230,14 +203,13 @@
         <!-- 社区题解贡献榜 -->
         <div class="side-card">
           <h4 class="side-title">🏆 题库出题贡献榜</h4>
-          <div class="contribute-list">
-            <div class="contributor-item" v-for="(u, i) in contributors" :key="u.name">
+          <div class="contribute-list" v-if="contributors.length > 0">
+            <div class="contributor-item" v-for="(u, i) in contributors" :key="u.name + '_' + i">
               <span class="c-rank">{{ i + 1 }}</span>
               <img
                 :src="u.avatar"
                 class="c-avatar"
                 alt="avatar"
-                onerror="if (!this.dataset.errored) { this.dataset.errored = 'true'; this.src = 'http://127.0.0.1:9000/user/avatar/default_avatar.jpg'; }"
                 @error="handleContributorAvatarError"
               />
               <div class="c-info">
@@ -246,6 +218,9 @@
               </div>
               <span class="c-count">{{ u.questions }}题</span>
             </div>
+          </div>
+          <div v-else class="side-empty">
+            暂无贡献数据
           </div>
         </div>
       </div>
@@ -259,12 +234,14 @@ import { useSubjectStore } from '@/stores/subject'
 import { useAuthStore } from '@/stores/auth'
 import TechIcon from '@/components/TechIcon.vue'
 import { formatAnswer } from '@/utils/format'
+import defaultAvatarImg from '@/assets/default_avatar.jpg'
 
 const subjectStore = useSubjectStore()
 const authStore = useAuthStore()
 
 onMounted(async () => {
   await subjectStore.fetchCategories()
+  await subjectStore.fetchContributeList()
 })
 
 // 一级职位展开/收起状态
@@ -307,25 +284,6 @@ function toggleAnswer(id) {
     next.add(id)
   }
   revealedQuestions.value = next
-}
-
-const activeSub = computed(() => subjectStore.activeSubCategory)
-
-const displayLabels = computed(() => {
-  if (activeSub.value?.labels && activeSub.value.labels.length > 0) {
-    return activeSub.value.labels
-  }
-  const list = subjectStore.currentSubCategoryList || []
-  const set = new Set()
-  list.forEach((sub) => {
-    ;(sub.labels || []).forEach((l) => set.add(l))
-  })
-  return Array.from(set)
-})
-
-function resetFilters() {
-  subjectStore.setDifficulty('all')
-  subjectStore.clearLabels()
 }
 
 // 分页逻辑（每页不超过5条）
@@ -376,55 +334,40 @@ function handleJumpPage() {
   }
 }
 
-const defaultContributorAvatar = 'https://loremflickr.com/g/320/240/paris,girl/all'
+const defaultContributorAvatar = defaultAvatarImg
 
+// 真实榜单数据：完全来源于后端真实题库贡献接口，绝不使用前端 mock 数据
 const contributors = computed(() => {
-  const currentNick = authStore.userInfo?.nickName || authStore.userInfo?.userName || '随风'
-  const currentAvatar = authStore.avatar || authStore.userInfo?.avatar || defaultContributorAvatar
-
-  return [
-    {
-      name: currentNick,
-      role: '全栈架构师 (PRO)',
-      questions: 342,
-      avatar: currentAvatar
-    },
-    {
-      name: '超级管理员',
-      role: '平台维护者',
-      questions: 215,
-      avatar: defaultContributorAvatar
-    },
-    {
-      name: 'VIP 学员小张',
-      role: '字节上岸学员',
-      questions: 128,
-      avatar: defaultContributorAvatar
-    },
-    {
-      name: '测试小伙伴',
-      role: '活跃开源答主',
-      questions: 95,
-      avatar: defaultContributorAvatar
-    }
-  ]
+  if (subjectStore.contributeList && Array.isArray(subjectStore.contributeList) && subjectStore.contributeList.length > 0) {
+    return subjectStore.contributeList.slice(0, 10).map((item, idx) => ({
+      name: item.createUser || `贡献者 ${idx + 1}`,
+      role: idx === 0 ? '全栈架构师 (PRO)' : idx === 1 ? '平台核心维护者' : idx === 2 ? '架构技术专家' : idx === 3 ? '活跃开源答主' : idx === 4 ? 'VIP 技术学员' : '核心贡献者',
+      questions: item.subjectCount || 0,
+      avatar: (item.createUserAvatar && !item.createUserAvatar.includes('default_avatar.jpg'))
+        ? item.createUserAvatar
+        : (item.avatar && !item.avatar.includes('default_avatar.jpg'))
+          ? item.avatar
+          : defaultContributorAvatar
+    }))
+  }
+  return []
 })
 
 function handleContributorAvatarError(e) {
-  // 占位图片外链若加载失败或网络波动，平滑优雅降级到默认头像，防止出现裂图图标
+  // 占位图片外链若加载失败或网络波动，平滑优雅降级到本地默认头像，防止出现裂图图标
   e.target.onerror = null
-  e.target.src = 'http://127.0.0.1:9000/user/avatar/default_avatar.jpg'
+  e.target.src = defaultAvatarImg
 }
 </script>
 
 <style scoped>
 /* 一级分类：职位切换导航条 */
 .primary-tabs-wrapper {
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   padding: 6px 8px;
-  margin-bottom: 16px;
+  margin-bottom: 13px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -479,9 +422,11 @@ function handleContributorAvatarError(e) {
 }
 
 .primary-tab.active {
-  background: var(--primary);
-  color: #ffffff;
-  box-shadow: 0 2px 4px rgba(22, 119, 255, 0.25);
+  background: var(--primary-light, #eff6ff);
+  border-color: var(--primary, #1677ff);
+  color: var(--primary, #1677ff);
+  font-weight: 600;
+  box-shadow: none;
 }
 
 .primary-expand-btn {
@@ -491,7 +436,7 @@ function handleContributorAvatarError(e) {
   gap: 4px;
   height: 40px;
   padding: 0 14px;
-  background: #f8fafc;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-size: 13px;
@@ -504,7 +449,7 @@ function handleContributorAvatarError(e) {
 }
 
 .primary-expand-btn:hover {
-  background: #eff6ff;
+  background: var(--primary-light, #eff6ff);
   border-color: var(--primary-border);
 }
 
@@ -513,19 +458,21 @@ function handleContributorAvatarError(e) {
   margin-top: 4px;
 }
 
-/* 二级分类：技能与中间件卡片胶囊 */
+/* 二级分类：技能与中间件卡片胶囊 - 直接全量平铺展示 */
 .sub-category-bar {
   display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 4px 2px 8px 2px;
-  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 13px;
+  padding: 2px 0;
 }
+
 .sub-pill {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   padding: 8px 14px;
   border-radius: var(--radius-md);
@@ -534,11 +481,19 @@ function handleContributorAvatarError(e) {
   font-weight: 500;
   box-sizing: border-box;
   transition: none;
+  flex-shrink: 0;
 }
+
+.sub-pill * {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 .sub-pill:hover {
   border-color: var(--primary-border);
   box-shadow: var(--shadow-sm);
 }
+
 .sub-pill.active {
   background: #eff6ff;
   border-color: var(--primary);
@@ -546,14 +501,17 @@ function handleContributorAvatarError(e) {
   font-weight: 600;
   transition: none;
 }
+
 .sub-icon {
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .sub-name {
   font-size: 13px;
 }
+
 .sub-count {
   font-size: 11px;
   background: var(--bg-subtle);
@@ -561,59 +519,10 @@ function handleContributorAvatarError(e) {
   border-radius: 9999px;
   color: var(--text-muted);
 }
+
 .sub-pill.active .sub-count {
   background: #dbeafe;
   color: var(--primary);
-}
-
-/* 三级分类：知识点标签过滤栏 */
-.label-filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 10px 16px;
-  margin-bottom: 16px;
-}
-.label-filter-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-.label-pills {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.label-pill {
-  font-size: 12px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  padding: 3px 10px;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  color: var(--text-regular);
-  transition: all 0.2s;
-}
-.label-pill:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.label-pill.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-  font-weight: 600;
-}
-.label-clear {
-  font-size: 11px;
-  color: var(--danger);
-  cursor: pointer;
-  margin-left: 6px;
 }
 
 /* 工具与过滤操作栏 */
@@ -621,11 +530,11 @@ function handleContributorAvatarError(e) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 8px 16px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .filter-left {
   display: flex;
@@ -639,7 +548,8 @@ function handleContributorAvatarError(e) {
 }
 .filter-label {
   font-size: 12px;
-  color: var(--text-muted);
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 .filter-btn {
   background: none;
@@ -670,8 +580,8 @@ function handleContributorAvatarError(e) {
   gap: 6px;
   cursor: pointer;
   user-select: none;
-  font-size: 13px;
-  color: var(--text-regular);
+  font-size: 12px;
+  color: var(--text-secondary);
   padding: 3px 6px;
   border-radius: var(--radius-sm);
   transition: background 0.15s ease;
@@ -688,7 +598,7 @@ function handleContributorAvatarError(e) {
 }
 .recite-label-text {
   font-size: 12px;
-  color: var(--text-regular);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -697,7 +607,7 @@ function handleContributorAvatarError(e) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 12px 18px;
@@ -728,7 +638,7 @@ function handleContributorAvatarError(e) {
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--border-color);
-  background: #ffffff;
+  background: var(--bg-card);
   color: var(--text-regular);
   border-radius: var(--radius-sm);
   font-size: 13px;
@@ -739,12 +649,12 @@ function handleContributorAvatarError(e) {
 .page-btn:hover:not(:disabled) {
   border-color: var(--primary, #1677ff);
   color: var(--primary, #1677ff);
-  background: #eff6ff;
+  background: var(--primary-light, #eff6ff);
 }
 .page-btn.active {
-  background: var(--primary, #1677ff);
+  background: var(--primary-light, #eff6ff);
   border-color: var(--primary, #1677ff);
-  color: #ffffff;
+  color: var(--primary, #1677ff);
   font-weight: 600;
 }
 .page-btn:disabled {
@@ -783,7 +693,7 @@ function handleContributorAvatarError(e) {
   height: 30px;
   padding: 0 12px;
   border: 1px solid var(--border-color);
-  background: #f8fafc;
+  background: var(--bg-card);
   border-radius: var(--radius-sm);
   font-size: 12px;
   color: var(--text-regular);
@@ -809,22 +719,24 @@ function handleContributorAvatarError(e) {
   min-height: 520px;
 }
 .empty-list {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px dashed var(--border-color);
   border-radius: var(--radius-md);
   padding: 40px;
   text-align: center;
 }
 .subject-q-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 16px 20px;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transform: none;
 }
 .subject-q-card:hover {
   border-color: var(--primary-border);
   box-shadow: var(--shadow-sm);
+  transform: none !important;
 }
 .q-title {
   font-size: 15px;
@@ -832,16 +744,22 @@ function handleContributorAvatarError(e) {
   color: var(--text-main);
   line-height: 1.45;
   margin-bottom: 12px;
+  cursor: default;
+}
+.q-title:hover {
+  color: var(--text-main) !important;
+  text-decoration: none !important;
+  cursor: default !important;
 }
 .q-answer-preview {
   font-size: 13.5px;
   color: var(--text-regular);
   line-height: 1.7;
-  background: var(--bg-hover);
+  background: var(--bg-subtle, #f8fafc);
   padding: 14px 16px;
   border-radius: var(--radius-sm);
   margin-bottom: 12px;
-  border-left: 3px solid var(--primary);
+  border-left: 3px solid var(--primary, #66b2ff);
   animation: fadeIn 0.2s ease-in-out;
 }
 .summary-text {
@@ -906,6 +824,21 @@ function handleContributorAvatarError(e) {
 }
 :deep(.summary-text .ans-gap) {
   height: 8px;
+}
+:deep(.ans-img-inner) {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transform: none;
+}
+:deep(.ans-img-inner:hover) {
+  border-color: var(--primary-border);
+  box-shadow: var(--shadow-sm);
+  transform: none !important;
+}
+:deep(.ans-img) {
+  transform: none !important;
+}
+:deep(.ans-img-inner:hover .ans-img) {
+  transform: none !important;
 }
 .collapse-row {
   display: flex;
@@ -1012,17 +945,63 @@ function handleContributorAvatarError(e) {
 
 /* 右侧边栏 */
 .side-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 18px;
   margin-bottom: 20px;
+}
+
+/* 深色模式针对 SubjectView 的专项优化 */
+:global(html.dark) .q-answer-preview {
+  background: #0d1526 !important;
+  border-left-color: #3b82f6 !important;
+}
+
+:global(html.dark) .recite-bar {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #fbbf24 !important;
+}
+
+:global(html.dark) .recite-bar:hover {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: rgba(245, 158, 11, 0.5) !important;
+}
+
+:global(html.dark) .checkpoint-val {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  color: #60a5fa !important;
+}
+
+:global(html.dark) .summary-text table,
+:global(html.dark) .summary-text th,
+:global(html.dark) .summary-text td {
+  background-color: #111b2e !important;
+  border-color: #243247 !important;
+  color: #cbd5e1 !important;
+}
+
+:global(html.dark) .summary-text th {
+  background-color: #162238 !important;
+  color: #f1f5f9 !important;
+}
+
+:global(html.dark) .summary-text tr:nth-child(even) td {
+  background-color: #0e1728 !important;
 }
 .side-title {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-main);
   margin-bottom: 14px;
+}
+.side-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 24px 0;
 }
 .contribute-list {
   display: flex;
@@ -1038,7 +1017,9 @@ function handleContributorAvatarError(e) {
   font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
-  width: 14px;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
 }
 .c-avatar {
   width: 32px;

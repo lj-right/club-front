@@ -6,7 +6,7 @@
       <div class="home-main">
         <div class="section-header">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <h2 style="font-size: 18px; font-weight: 700; color: var(--text-main);">今日必刷高频题</h2>
+            <h2 style="font-size: 18px; font-weight: 700; color: var(--text-main);">随机刷题</h2>
             <button
               class="refresh-btn"
               @click="handleRefreshToday"
@@ -54,9 +54,9 @@
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="author-tag">考题作者: {{ q.author || '架构专家' }}</span>
                 <span style="color: var(--border-color);">•</span>
-                <span class="time-tag">更新于: {{ q.timeAgo || '刚刚' }}</span>
+                <span class="time-tag">更新于: {{ q.timeAgo || '3天前' }}</span>
                 <span style="color: var(--border-color);">•</span>
-                <span class="views-count">{{ q.views || '42.8k' }} 次研读</span>
+                <span class="views-count">{{ q.views != null ? q.views : 0 }} 次研读</span>
               </div>
             </div>
           </div>
@@ -65,9 +65,9 @@
 
       <!-- 右侧：热门题榜与圈子热议 -->
       <div class="home-sidebar">
-        <!-- 热门题目排行榜 TOP 10 -->
+        <!-- 热门题目排行榜 TOP 5 -->
         <div class="sidebar-card">
-          <h3 class="sidebar-title">🔥 全站高频题目榜 TOP 10</h3>
+          <h3 class="sidebar-title">🔥 全站高频题目榜 TOP 5</h3>
           <div class="rank-list">
             <div
               v-for="(hot, idx) in hotList"
@@ -89,10 +89,7 @@
 
         <!-- 社区热议速报 -->
         <div class="sidebar-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h3 class="sidebar-title" style="margin-bottom: 0;">圈子热议交流</h3>
-            <span class="link-more" @click="$router.push('/circle')">去圈子 ›</span>
-          </div>
+          <h3 class="sidebar-title">圈子热议交流</h3>
           <div class="community-mini-list">
             <div
               v-for="m in circleStore.moments.slice(0, 3)"
@@ -129,6 +126,7 @@ const revealedQuestions = ref(new Set())
 
 onMounted(() => {
   subjectStore.fetchRandomTodayQuestions()
+  subjectStore.fetchHotSubjectList()
 })
 
 function handleRefreshToday() {
@@ -186,8 +184,8 @@ function handleHotClick(hot) {
       summary: hot.summary || hot.answer || '该考点考查底层核心设计与工业级高并发实战方案。',
       answer: hot.answer || hot.summary || '该考点考查底层核心设计与工业级高并发实战方案。',
       author: hot.author || '架构专家',
-      timeAgo: hot.timeAgo || '刚刚',
-      views: hot.views || '95.8k'
+      timeAgo: hot.timeAgo || '3天前',
+      views: hot.views != null ? hot.views : '0'
     })
   }
 
@@ -224,7 +222,7 @@ function handleHotClick(hot) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   padding: 4px 12px;
   border-radius: 20px;
@@ -271,7 +269,7 @@ function handleHotClick(hot) {
   transition: transform 0.2s;
 }
 .recite-toggle input:checked + .toggle-slider {
-  background: var(--primary);
+  background: var(--primary-hover, #4096ff);
 }
 .recite-toggle input:checked + .toggle-slider::after {
   transform: translateX(16px);
@@ -282,16 +280,18 @@ function handleHotClick(hot) {
   gap: 14px;
 }
 .q-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 18px 20px;
   cursor: default;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transform: none;
 }
 .q-card:hover {
   border-color: var(--primary-border);
   box-shadow: var(--shadow-sm);
+  transform: none !important;
 }
 .q-card.target-highlighted {
   border-color: var(--primary, #1677ff) !important;
@@ -319,9 +319,14 @@ function handleHotClick(hot) {
   margin-bottom: 12px;
   cursor: default;
 }
+.q-card-title:hover {
+  color: var(--text-main) !important;
+  text-decoration: none !important;
+  cursor: default !important;
+}
 .q-summary-box {
-  background: #f8fafc;
-  border-left: 3px solid var(--primary);
+  background: var(--bg-subtle, #f8fafc);
+  border-left: 3px solid var(--primary, #66b2ff);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: 12px 14px;
   margin-bottom: 12px;
@@ -391,6 +396,21 @@ function handleHotClick(hot) {
 :deep(.summary-text .ans-gap) {
   height: 8px;
 }
+:deep(.ans-img-inner) {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transform: none;
+}
+:deep(.ans-img-inner:hover) {
+  border-color: var(--primary-border);
+  box-shadow: var(--shadow-sm);
+  transform: none !important;
+}
+:deep(.ans-img) {
+  transform: none !important;
+}
+:deep(.ans-img-inner:hover .ans-img) {
+  transform: none !important;
+}
 .q-recite-placeholder {
   background: var(--duck-yellow-light);
   border: 1px dashed var(--duck-yellow-border);
@@ -430,11 +450,45 @@ function handleHotClick(hot) {
   color: var(--text-muted);
 }
 .sidebar-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 18px;
   margin-bottom: 20px;
+}
+
+/* 深色模式针对 HomeView 的定向优化 */
+:global(html.dark) .q-summary-box {
+  background: #0d1526 !important;
+  border-left-color: #3b82f6 !important;
+}
+
+:global(html.dark) .q-recite-placeholder {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #fbbf24 !important;
+}
+
+:global(html.dark) .q-recite-placeholder:hover {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: rgba(245, 158, 11, 0.5) !important;
+}
+
+:global(html.dark) .summary-text table,
+:global(html.dark) .summary-text th,
+:global(html.dark) .summary-text td {
+  background-color: #111b2e !important;
+  border-color: #243247 !important;
+  color: #cbd5e1 !important;
+}
+
+:global(html.dark) .summary-text th {
+  background-color: #162238 !important;
+  color: #f1f5f9 !important;
+}
+
+:global(html.dark) .summary-text tr:nth-child(even) td {
+  background-color: #0e1728 !important;
 }
 .sidebar-title {
   font-size: 14px;

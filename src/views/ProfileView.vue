@@ -5,7 +5,7 @@
       <div class="profile-main-info">
         <div class="profile-avatar-wrap" @click="triggerAvatarUpload" title="点击上传/更换头像" style="cursor: pointer; position: relative;">
           <img :src="authStore.avatar" class="profile-avatar" />
-          <div class="avatar-hover-tip">📷 更换</div>
+          <div class="avatar-hover-tip">更换头像</div>
           <input
             ref="avatarInputRef"
             type="file"
@@ -22,17 +22,19 @@
           </div>
           <p class="profile-bio">{{ authStore.userInfo?.introduce || '全栈架构师，sf-club 核心创作者' }}</p>
           <div class="profile-meta">
-            <span>📧 {{ authStore.userInfo?.email || 'suifeng@sfclub.com' }}</span>
+            <span>邮箱: {{ authStore.userInfo?.email || 'suifeng@sfclub.com' }}</span>
             <span>•</span>
-            <span>📱 {{ authStore.userInfo?.phone || '138****0002' }}</span>
-            <span>•</span>
-            <span class="github-link">🔗 GitHub: https://github.com/jingdiansuifeng</span>
+            <span>手机: {{ authStore.userInfo?.phone || '未填写' }}</span>
+            <template v-if="githubLink">
+              <span>•</span>
+              <a :href="githubLink" target="_blank" rel="noopener noreferrer" class="github-link">GitHub: {{ githubLink }}</a>
+            </template>
           </div>
         </div>
       </div>
       <div class="profile-actions">
-        <button class="btn btn-secondary" @click="activeTab = 'edit'">
-          ✏️ 编辑个人资料
+        <button class="btn btn-secondary" @click="openEditTab">
+          编辑个人资料
         </button>
       </div>
     </div>
@@ -41,7 +43,7 @@
     <div class="stats-overview-grid">
       <div class="stat-box">
         <div class="stat-val" style="color: var(--primary);">{{ authStore.streakDays }} 天</div>
-        <div class="stat-label">连续打卡战绩 🔥</div>
+        <div class="stat-label">连续打卡战绩</div>
       </div>
       <div class="stat-box">
         <div class="stat-val" style="color: var(--success);">{{ masteredCount }} 道</div>
@@ -52,7 +54,7 @@
         <div class="stat-label">重点收藏题集</div>
       </div>
       <div class="stat-box">
-        <div class="stat-val" style="color: #6366f1;">94.2 分</div>
+        <div class="stat-val" style="color: #6366f1;">{{ maxExamScore !== null ? maxExamScore + ' 分' : '-' }}</div>
         <div class="stat-label">全真模考最高分</div>
       </div>
     </div>
@@ -77,7 +79,7 @@
         <div
           class="p-tab"
           :class="{ active: activeTab === 'edit' }"
-          @click="activeTab = 'edit'"
+          @click="openEditTab"
         >
           账号与资料设置
         </div>
@@ -95,7 +97,7 @@
               <span class="badge" :class="q.difficulty || 'medium'">
                 {{ q.difficulty === 'easy' ? '简单' : q.difficulty === 'hard' ? '困难' : '中等' }}
               </span>
-              <span style="font-size: 11px; color: var(--success); font-weight: 600;">已掌握 ✔</span>
+              <span style="font-size: 11px; color: var(--success); font-weight: 600;">已掌握</span>
             </div>
             <h4 class="master-q-title">{{ q.title }}</h4>
 
@@ -114,7 +116,7 @@
               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                 <span v-for="tag in q.labels || []" :key="tag" class="category-pill">{{ tag }}</span>
               </div>
-              <span class="master-views">{{ q.views || '42.8k' }} 次研读</span>
+              <span class="master-views">{{ q.views != null ? q.views : 0 }} 次研读</span>
             </div>
           </div>
         </div>
@@ -129,6 +131,13 @@
             <span>答题用时</span>
             <span>综合得分</span>
             <span>状态</span>
+            <span>操作</span>
+          </div>
+          <div
+            v-if="!examHistory || examHistory.length === 0"
+            style="padding: 36px 20px; text-align: center; color: var(--text-secondary); font-size: 13px;"
+          >
+            暂无机考练题记录
           </div>
           <div
             v-for="rec in examHistory"
@@ -137,11 +146,22 @@
           >
             <span style="font-weight: 600; color: var(--text-main);">{{ rec.title }}</span>
             <span style="color: var(--text-muted);">{{ rec.date }}</span>
-            <span style="color: var(--text-secondary);">{{ rec.time }}</span>
+            <span style="color: var(--text-secondary);">{{ rec.timeSpent || rec.time }}</span>
             <span style="font-weight: 800; font-family: var(--font-mono); color: var(--primary);">
               {{ rec.score }} 分
             </span>
-            <span class="badge easy">合格通过</span>
+            <span class="badge" :class="rec.score >= 60 ? 'easy' : 'hard'">
+              {{ rec.score >= 60 ? '合格通过' : '未达标' }}
+            </span>
+            <span>
+              <button
+                class="btn-delete-rec"
+                title="删除此条记录"
+                @click="deleteRecord(rec)"
+              >
+                删除
+              </button>
+            </span>
           </div>
         </div>
       </div>
@@ -150,27 +170,37 @@
       <div v-else-if="activeTab === 'edit'" class="tab-content">
         <div class="edit-form-card">
           <div class="form-row">
+            <label class="form-label">登录账号 (系统唯一标识，只读):</label>
+            <input :value="authStore.userInfo?.userName || 'suifeng'" type="text" class="form-input form-input-disabled" disabled />
+          </div>
+          <div class="form-row">
             <label class="form-label">用户昵称:</label>
-            <input v-model="editNickname" type="text" class="form-input" />
+            <input v-model="editNickname" type="text" class="form-input" placeholder="请输入你的技术昵称" />
           </div>
           <div class="form-row">
             <label class="form-label">个性签名 / 求职意向:</label>
-            <input v-model="editBio" type="text" class="form-input" />
+            <input v-model="editBio" type="text" class="form-input" placeholder="例如：全栈架构师，聚焦分布式高并发" />
           </div>
           <div class="form-row">
             <label class="form-label">联系邮箱:</label>
-            <input v-model="editEmail" type="email" class="form-input" />
+            <input v-model="editEmail" type="email" class="form-input" placeholder="suifeng@sfclub.com" />
           </div>
           <div class="form-row">
             <label class="form-label">手机号码:</label>
-            <input v-model="editPhone" type="text" class="form-input" />
+            <input v-model="editPhone" type="text" class="form-input" placeholder="请输入手机号码" />
+          </div>
+          <div class="form-row">
+            <label class="form-label">GitHub / 个人主页链接:</label>
+            <input v-model="editGithub" type="text" class="form-input" placeholder="https://github.com/..." />
           </div>
           <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
             <button class="btn btn-primary" :disabled="saving" @click="handleSaveProfile">
               {{ saving ? '保存中...' : '保存修改并同步后端' }}
             </button>
           </div>
-          <div v-if="saveTip" class="save-tip">{{ saveTip }}</div>
+          <div v-if="saveTip" :class="['save-tip', saveSuccess ? 'save-tip-success' : 'save-tip-error']">
+            {{ saveTip }}
+          </div>
         </div>
       </div>
     </div>
@@ -178,14 +208,26 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSubjectStore } from '@/stores/subject'
+import { usePracticeStore } from '@/stores/practice'
 
 const authStore = useAuthStore()
 const subjectStore = useSubjectStore()
+const practiceStore = usePracticeStore()
 
 const activeTab = ref('mastered')
+
+const githubLink = computed(() => {
+  if (authStore.userInfo?.extJson) {
+    try {
+      const ext = JSON.parse(authStore.userInfo.extJson)
+      if (ext.github) return ext.github
+    } catch (_) {}
+  }
+  return 'https://github.com/jingdiansuifeng'
+})
 
 const masteredList = computed(() => {
   return subjectStore.questions.filter((q) => q.mastered || q.liked)
@@ -211,18 +253,66 @@ const likedCount = computed(() => {
   return subjectStore.questions.filter((q) => q.liked).length
 })
 
-const examHistory = ref([
-  { id: 1, title: '2024 一线大厂高频全真模考卷 (A卷)', date: '2024-11-15 19:20', time: '28 分钟', score: 95 },
-  { id: 2, title: 'Java 并发与核心架构专项突破考', date: '2024-11-12 14:10', time: '18 分钟', score: 90 },
-  { id: 3, title: 'MySQL 深度调优与事务专项测试', date: '2024-11-09 21:05', time: '22 分钟', score: 88 }
-])
+const examHistory = computed(() => {
+  return practiceStore.examHistory || []
+})
 
-const editNickname = ref(authStore.nickname)
-const editBio = ref(authStore.userInfo?.introduce || '全栈架构师，sf-club 核心创作者')
-const editEmail = ref(authStore.userInfo?.email || 'suifeng@sfclub.com')
-const editPhone = ref(authStore.userInfo?.phone || '13800000002')
+const maxExamScore = computed(() => {
+  if (!examHistory.value || examHistory.value.length === 0) return null
+  const scores = examHistory.value.map((r) => Number(r.score) || 0)
+  return Math.max(...scores)
+})
+
+async function deleteRecord(rec) {
+  if (confirm(`确定要删除「${rec.title}」的模考记录吗？`)) {
+    await practiceStore.deleteHistoryItem(rec.id || rec.practiceId)
+  }
+}
+
+const editNickname = ref('')
+const editBio = ref('')
+const editEmail = ref('')
+const editPhone = ref('')
+const editGithub = ref('')
 const saving = ref(false)
 const saveTip = ref('')
+const saveSuccess = ref(true)
+
+function syncFormWithStore() {
+  editNickname.value = authStore.nickname || ''
+  editBio.value = authStore.userInfo?.introduce || ''
+  editEmail.value = authStore.userInfo?.email || ''
+  editPhone.value = authStore.userInfo?.phone || ''
+  let gh = 'https://github.com/jingdiansuifeng'
+  if (authStore.userInfo?.extJson) {
+    try {
+      const ext = JSON.parse(authStore.userInfo.extJson)
+      if (ext.github) gh = ext.github
+    } catch (_) {}
+  }
+  editGithub.value = gh
+}
+
+watch(
+  () => authStore.userInfo,
+  () => {
+    syncFormWithStore()
+  },
+  { immediate: true, deep: true }
+)
+
+function openEditTab() {
+  syncFormWithStore()
+  saveTip.value = ''
+  activeTab.value = 'edit'
+}
+
+onMounted(async () => {
+  const currentUserName = authStore.userInfo?.userName || 'suifeng'
+  await authStore.loadUserInfo(currentUserName)
+  syncFormWithStore()
+  await practiceStore.loadExamHistory()
+})
 
 const avatarInputRef = ref(null)
 const uploadingAvatar = ref(false)
@@ -237,9 +327,11 @@ async function handleAvatarFileChange(e) {
   uploadingAvatar.value = true
   try {
     await authStore.uploadAvatar(file)
+    saveSuccess.value = true
     saveTip.value = '头像已成功上传至 MinIO 并同步更新！'
   } catch (err) {
-    alert('头像上传失败：' + (err.message || '网络异常'))
+    saveSuccess.value = false
+    saveTip.value = '头像上传失败：' + (err.message || '网络异常')
   } finally {
     uploadingAvatar.value = false
     e.target.value = ''
@@ -247,16 +339,32 @@ async function handleAvatarFileChange(e) {
 }
 
 async function handleSaveProfile() {
+  if (!editNickname.value.trim()) {
+    saveSuccess.value = false
+    saveTip.value = '用户昵称不能为空！'
+    return
+  }
   saving.value = true
   saveTip.value = ''
   try {
+    const extObj = {}
+    if (editGithub.value.trim()) {
+      extObj.github = editGithub.value.trim()
+    }
     await authStore.updateProfile({
-      nickName: editNickname.value,
-      introduce: editBio.value,
-      email: editEmail.value,
-      phone: editPhone.value
+      id: authStore.userInfo?.id,
+      userName: authStore.userInfo?.userName || 'suifeng',
+      nickName: editNickname.value.trim(),
+      introduce: editBio.value.trim(),
+      email: editEmail.value.trim(),
+      phone: editPhone.value.trim(),
+      extJson: JSON.stringify(extObj)
     })
-    saveTip.value = '个人信息修改成功，已实时同步至后台！'
+    saveSuccess.value = true
+    saveTip.value = '个人信息修改成功，已实时同步至后台数据库！'
+  } catch (err) {
+    saveSuccess.value = false
+    saveTip.value = '保存失败：' + (err.message || '网络异常')
   } finally {
     saving.value = false
   }
@@ -481,7 +589,7 @@ async function handleSaveProfile() {
 }
 .table-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px;
   padding: 12px 16px;
   background: var(--bg-subtle);
   font-size: 12px;
@@ -490,11 +598,25 @@ async function handleSaveProfile() {
 }
 .table-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px;
   padding: 14px 16px;
   border-top: 1px solid var(--border-color);
   font-size: 13px;
   align-items: center;
+}
+.btn-delete-rec {
+  background: none;
+  border: 1px solid #fee2e2;
+  color: #ef4444;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-delete-rec:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
 }
 .edit-form-card {
   max-width: 520px;
@@ -521,12 +643,27 @@ async function handleSaveProfile() {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-light);
 }
+.form-input-disabled {
+  background: #f8fafc;
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-style: dashed;
+}
 .save-tip {
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--success);
-  background: var(--success-light);
-  padding: 8px 12px;
-  border-radius: 4px;
+  margin-top: 14px;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  line-height: 1.5;
+}
+.save-tip-success {
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+.save-tip-error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
 }
 </style>

@@ -229,7 +229,7 @@ function handleLogout() {
   top: 100%;
   right: 0;
   margin-top: 8px;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);

@@ -373,7 +373,7 @@ async function handleSaveProfile() {
 
 <style scoped>
 .profile-header-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 28px 32px;
@@ -458,7 +458,7 @@ async function handleSaveProfile() {
   margin-bottom: 24px;
 }
 .stat-box {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 18px;
@@ -475,7 +475,7 @@ async function handleSaveProfile() {
   color: var(--text-muted);
 }
 .profile-tabs-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   overflow: hidden;

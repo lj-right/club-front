@@ -252,7 +252,7 @@ function formatHistoryTime(timestamp) {
   min-height: 560px;
 }
 .resume-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 20px;
@@ -371,7 +371,7 @@ function formatHistoryTime(timestamp) {
 }
 
 .chat-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   display: flex;
@@ -413,7 +413,7 @@ function formatHistoryTime(timestamp) {
   height: 8px;
   background: var(--success);
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 2px solid var(--bg-card);
 }
 .chat-feed {
   flex: 1;
@@ -422,7 +422,7 @@ function formatHistoryTime(timestamp) {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  background: #f8fafc;
+  background: var(--bg-page);
 }
 .chat-bubble-row {
   display: flex;
@@ -446,7 +446,7 @@ function formatHistoryTime(timestamp) {
   margin-bottom: 4px;
 }
 .bubble-text {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 12px 16px;
@@ -463,7 +463,7 @@ function formatHistoryTime(timestamp) {
 .chat-input-area {
   border-top: 1px solid var(--border-color);
   padding: 14px 20px;
-  background: #ffffff;
+  background: var(--bg-card);
 }
 .input-form {
   display: flex;
@@ -480,6 +480,8 @@ function formatHistoryTime(timestamp) {
   line-height: 1.5;
   outline: none;
   resize: none;
+  background: var(--bg-page);
+  color: var(--text-main);
 }
 .answer-textarea:focus {
   border-color: var(--primary);

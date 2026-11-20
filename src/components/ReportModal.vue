@@ -259,11 +259,11 @@ function handleReviewErrors() {
 }
 
 .modal-box {
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 10px;
   padding: 24px 28px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   width: 100%;
   max-width: 580px;
 }

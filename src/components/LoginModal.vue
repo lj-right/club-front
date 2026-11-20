@@ -222,7 +222,7 @@ onUnmounted(() => {
   justify-content: center;
 }
 .modal-box {
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: var(--shadow-lg);
@@ -237,7 +237,7 @@ onUnmounted(() => {
   width: 120px;
   height: 120px;
   border: 1px solid var(--border-color);
-  background: #fafafa;
+  background: var(--bg-subtle);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -247,7 +247,7 @@ onUnmounted(() => {
   position: relative;
 }
 .qr-center-logo {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--primary-border);
   color: var(--primary);
   font-size: 12px;

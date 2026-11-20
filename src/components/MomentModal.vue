@@ -142,7 +142,7 @@ async function handlePublish() {
   justify-content: center;
 }
 .modal-box {
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: var(--shadow-lg);
@@ -158,6 +158,8 @@ async function handlePublish() {
   line-height: 1.6;
   outline: none;
   resize: vertical;
+  background: var(--bg-page);
+  color: var(--text-main);
 }
 .moment-textarea:focus {
   border-color: var(--primary);

@@ -102,7 +102,7 @@ onMounted(() => {
 .search-modal-box {
   width: 640px;
   max-width: 92vw;
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);

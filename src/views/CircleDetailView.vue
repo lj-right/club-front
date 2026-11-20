@@ -463,7 +463,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 10px 16px;
@@ -497,7 +497,7 @@ onMounted(async () => {
 
 /* 动态正文卡片 */
 .moment-main-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 24px;
@@ -646,7 +646,7 @@ onMounted(async () => {
 }
 
 .moment-loading {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 48px;
@@ -670,7 +670,7 @@ onMounted(async () => {
 
 /* 评论互动专区卡片 */
 .comments-container-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 24px;
@@ -987,7 +987,7 @@ onMounted(async () => {
 }
 
 .empty-detail-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 48px 24px;

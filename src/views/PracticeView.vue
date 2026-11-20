@@ -1857,12 +1857,12 @@ onMounted(async () => {
 }
 
 .manifest-label {
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .manifest-val {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-main);
   font-family: var(--font-mono, monospace);
 }
 
@@ -1961,10 +1961,10 @@ onMounted(async () => {
 }
 
 .custom-action-link {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
   font-size: 12px;
-  color: #475569;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 3px 10px;
   border-radius: 6px;
@@ -1976,9 +1976,9 @@ onMounted(async () => {
 }
 
 .custom-action-link:hover {
-  color: #1677ff;
-  border-color: #93c5fd;
-  background: #eff6ff;
+  color: var(--primary);
+  border-color: var(--primary-border);
+  background: var(--primary-light);
   text-decoration: none !important;
 }
 
@@ -1998,25 +1998,25 @@ onMounted(async () => {
 
 .custom-pri-btn {
   padding: 6px 14px;
-  background: #f4f4f5;
+  background: var(--bg-subtle);
   border: 1px solid transparent;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #525252;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .custom-pri-btn:hover {
-  color: #171717;
-  background: #e4e4e7;
+  color: var(--text-main);
+  background: var(--bg-hover);
 }
 
 .custom-pri-btn.active {
-  background: #eff6ff;
-  border-color: #1677ff;
-  color: #1677ff;
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -2027,8 +2027,8 @@ onMounted(async () => {
   gap: 10px;
   margin-bottom: 22px;
   padding: 16px;
-  background: #fafafa;
-  border: 1px solid #f4f4f5;
+  background: var(--bg-page);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   min-height: 56px;
 }
@@ -2038,11 +2038,11 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 13px;
-  color: #374151;
+  color: var(--text-regular);
   cursor: pointer;
   user-select: none;
   transition: all 0.15s ease;
@@ -2104,26 +2104,26 @@ onMounted(async () => {
 .config-label {
   font-size: 13px;
   font-weight: 600;
-  color: #171717;
+  color: var(--text-main);
 }
 
 .stepper-box {
   display: flex;
   align-items: center;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--bg-card);
 }
 
 .step-btn {
   width: 34px;
   height: 34px;
-  background: #f9fafb;
+  background: var(--bg-subtle);
   border: none;
   font-size: 16px;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2133,8 +2133,8 @@ onMounted(async () => {
 }
 
 .step-btn:hover {
-  background: #f3f4f6;
-  color: #1677ff;
+  background: var(--bg-hover);
+  color: var(--primary);
 }
 
 .step-input {
@@ -2142,13 +2142,14 @@ onMounted(async () => {
   width: 100%;
   height: 34px;
   border: none;
-  border-left: 1px solid #e5e7eb;
-  border-right: 1px solid #e5e7eb;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
   text-align: center;
   font-size: 13px;
   font-weight: 600;
   font-family: 'JetBrains Mono', monospace;
-  color: #171717;
+  color: var(--text-main);
+  background: var(--bg-card);
   outline: none;
   -moz-appearance: textfield;
 }
@@ -2165,22 +2166,22 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding-top: 16px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--border-color);
 }
 
 .custom-footer-stats {
   font-size: 13px;
-  color: #525252;
+  color: var(--text-secondary);
 }
 
 .custom-footer-stats strong {
-  color: #171717;
+  color: var(--text-main);
   font-family: 'JetBrains Mono', monospace;
 }
 
 .stat-sep {
   margin: 0 8px;
-  color: #d4d4d8;
+  color: var(--border-color);
 }
 
 .custom-footer-actions {
@@ -2228,8 +2229,8 @@ onMounted(async () => {
 }
 
 .tech-cat-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 18px 20px;
   display: flex;
@@ -2240,7 +2241,7 @@ onMounted(async () => {
 }
 
 .tech-cat-card:hover {
-  border-color: #93c5fd;
+  border-color: var(--primary-border);
   box-shadow: 0 4px 12px rgba(22, 119, 255, 0.08);
   transform: translateY(-2px);
 }
@@ -2256,8 +2257,8 @@ onMounted(async () => {
   width: 38px;
   height: 38px;
   border-radius: 8px;
-  background: #f8fafc;
-  border: 1px solid #f1f5f9;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2278,13 +2279,13 @@ onMounted(async () => {
 .cat-title {
   font-size: 15px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-main);
   margin: 0;
 }
 
 .cat-group-name {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-muted);
   margin-top: 1px;
 }
 
@@ -2297,8 +2298,9 @@ onMounted(async () => {
 }
 
 .cat-label-pill {
-  background: #f3f4f6;
-  color: #4b5563;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
   font-size: 11.5px;
   padding: 2px 8px;
   border-radius: 4px;
@@ -2307,8 +2309,9 @@ onMounted(async () => {
 }
 
 .cat-label-pill:hover {
-  background: #e0e7ff;
-  color: #1677ff;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-border);
 }
 
 .cat-card-footer {
@@ -3828,9 +3831,9 @@ onMounted(async () => {
    练习页面统一按钮风格：白底 + 深色文字 + 圆角胶囊 + 悬浮不改变文字颜色
    ========================================================================== */
 .view-container .btn {
-  background: #ffffff;
-  color: #334155;
-  border: 1px solid #d1d5db;
+  background: var(--bg-card);
+  color: var(--text-regular);
+  border: 1px solid var(--border-color);
   border-radius: 9999px;
   font-weight: 500;
   font-size: 14px;
@@ -3839,15 +3842,15 @@ onMounted(async () => {
 }
 
 .view-container .btn:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #334155;
+  background: var(--bg-hover);
+  border-color: var(--primary-border);
+  color: var(--primary);
 }
 
 .view-container .btn:active:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #334155;
+  background: var(--bg-subtle);
+  border-color: var(--primary-border);
+  color: var(--primary);
 }
 
 .view-container .btn:disabled {
@@ -3858,39 +3861,39 @@ onMounted(async () => {
 /* 覆盖 btn-primary 与 btn-secondary 变体，统一为相同风格 */
 .view-container .btn.btn-primary,
 .view-container .btn.btn-secondary {
-  background: #ffffff;
-  color: #334155;
-  border-color: #d1d5db;
+  background: var(--bg-card);
+  color: var(--text-regular);
+  border-color: var(--border-color);
 }
 
 .view-container .btn.btn-primary:hover:not(:disabled),
 .view-container .btn.btn-secondary:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #334155;
+  background: var(--bg-hover);
+  border-color: var(--primary-border);
+  color: var(--primary);
 }
 
 .view-container .btn.btn-primary:active:not(:disabled),
 .view-container .btn.btn-secondary:active:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #334155;
+  background: var(--bg-subtle);
+  border-color: var(--primary-border);
+  color: var(--primary);
 }
 
 /* Hero 开始全真模考按钮也统一风格 */
 .view-container .hero-start-btn {
-  background: #ffffff !important;
-  color: #334155 !important;
-  border: 1px solid #d1d5db !important;
+  background: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
   box-shadow: none;
 }
 
 .view-container .hero-start-btn:hover,
 .view-container .hero-start-btn:focus,
 .view-container .hero-start-btn:active {
-  background: #f8fafc !important;
-  border-color: #94a3b8 !important;
-  color: #334155 !important;
+  background: var(--bg-hover) !important;
+  border-color: var(--primary-border) !important;
+  color: var(--primary) !important;
   box-shadow: none;
 }
 

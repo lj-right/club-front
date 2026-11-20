@@ -308,7 +308,7 @@
     }
 
     .search-input:focus {
-      background: #fff;
+      background: var(--bg-card);
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
     }
@@ -318,7 +318,7 @@
       right: 10px;
       font-size: 11px;
       color: var(--text-muted);
-      background: #fff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 4px;
       padding: 1px 5px;
@@ -365,7 +365,7 @@
       align-items: center;
       justify-content: center;
       border: 1px solid var(--border-color);
-      background: #fff;
+      background: var(--bg-card);
       border-radius: var(--radius-full);
       color: var(--text-secondary);
       cursor: pointer;
@@ -477,7 +477,7 @@
 
     /* 大厂考情突击通知条 */
     .announcement-bar {
-      background: #ffffff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-left: 4px solid var(--primary);
       border-radius: var(--radius-md);
@@ -612,7 +612,7 @@
       font-size: 13px;
       font-weight: 500;
       color: var(--text-regular);
-      background: #ffffff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       cursor: pointer;
       white-space: nowrap;
@@ -661,7 +661,7 @@
       font-size: 12px;
       padding: 3px 10px;
       border-radius: var(--radius-full);
-      background: #ffffff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       color: var(--text-regular);
       cursor: pointer;
@@ -730,7 +730,7 @@
       padding: 0 8px;
       font-size: 12px;
       color: var(--text-main);
-      background: #fff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-sm);
       outline: none;
@@ -766,7 +766,7 @@
     }
 
     .sort-tab.active {
-      background: #fff;
+      background: var(--bg-card);
       color: var(--primary);
       font-weight: 600;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -872,7 +872,7 @@
     }
 
     .featured-card:hover {
-      background: #fff;
+      background: var(--bg-card);
       border-color: var(--primary-border);
       transform: translateY(-2px);
       box-shadow: var(--shadow-md);
@@ -987,7 +987,7 @@
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
       padding: 16px 18px;
-      background: #ffffff;
+      background: var(--bg-card);
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
       cursor: default;
       display: flex;
@@ -1136,7 +1136,7 @@
       padding: 2px 8px;
       border-radius: var(--radius-full);
       border: 1px solid var(--border-color);
-      background: #fff;
+      background: var(--bg-card);
       color: var(--text-secondary);
       cursor: pointer;
       transition: all 0.15s;
@@ -1172,7 +1172,7 @@
       padding: 0 8px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border-color);
-      background: #fff;
+      background: var(--bg-card);
       color: var(--text-regular);
       font-size: 13px;
       cursor: pointer;
@@ -1344,7 +1344,7 @@
     }
 
     .practice-setup-card {
-      background: #fff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
       padding: 24px;
@@ -1352,7 +1352,7 @@
     }
 
     .exam-header {
-      background: #fff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
       padding: 16px 24px;
@@ -1384,7 +1384,7 @@
     }
 
     .exam-q-box {
-      background: #fff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
       padding: 24px;
@@ -1411,7 +1411,7 @@
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
       padding: 14px 18px;
-      background: #fff;
+      background: var(--bg-card);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -1437,7 +1437,7 @@
       height: 26px;
       border-radius: 50%;
       border: 1px solid var(--border-color);
-      background: #fff;
+      background: var(--bg-card);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1462,7 +1462,7 @@
     }
 
     .sheet-card {
-      background: #fff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
       padding: 18px;
@@ -1480,7 +1480,7 @@
       aspect-ratio: 1;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border-color);
-      background: #fff;
+      background: var(--bg-card);
       color: var(--text-regular);
       font-size: 12px;
       font-weight: 600;
@@ -1523,7 +1523,7 @@
     .circle-channel-item {
       padding: 8px 18px;
       border-radius: var(--radius-full);
-      background: #fff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       font-size: 13px;
       font-weight: 600;
@@ -1553,7 +1553,7 @@
       border-radius: var(--radius-lg);
       padding: 30px 20px;
       text-align: center;
-      background: #fff;
+      background: var(--bg-card);
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -1564,7 +1564,7 @@
     }
 
     .chat-container {
-      background: #fff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
       height: 600px;
@@ -1622,14 +1622,14 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      background: #fff;
+      background: var(--bg-card);
     }
 
     /* ==========================================================================
        个人中心视图 (Profile View)
        ========================================================================== */
     .profile-header-card {
-      background: #fff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
       padding: 28px;
@@ -1667,7 +1667,7 @@
       width: 780px;
       max-width: 90vw;
       height: 100vh;
-      background: #ffffff;
+      background: var(--bg-card);
       box-shadow: var(--shadow-drawer);
       display: flex;
       flex-direction: column;
@@ -1727,7 +1727,7 @@
     .drawer-tab.active {
       color: var(--primary);
       border-bottom-color: var(--primary);
-      background: #fff;
+      background: var(--bg-card);
     }
 
     .drawer-body {
@@ -1825,7 +1825,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #fff;
+      background: var(--bg-card);
     }
 
     /* 模态弹窗系统 (Modals) */
@@ -1845,7 +1845,7 @@
     }
 
     .modal-box {
-      background: #fff;
+      background: var(--bg-card);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-lg);
       width: 520px;
@@ -1901,7 +1901,7 @@
     }
 
     .btn-secondary {
-      background: #fff;
+      background: var(--bg-card);
       border-color: var(--border-color);
       color: var(--text-regular);
     }
@@ -1942,7 +1942,7 @@
 
     /* 页脚 (Footer) */
     .footer {
-      background: #ffffff;
+      background: var(--bg-card);
       border-top: 1px solid var(--border-color);
       padding: 36px 0 24px;
       margin-top: 40px;
@@ -1997,7 +1997,7 @@
       border-radius: var(--radius-md);
       overflow: hidden;
       border: 1px solid var(--border-color);
-      background: #ffffff;
+      background: var(--bg-card);
       cursor: zoom-in;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
       transform: none;
@@ -2190,10 +2190,16 @@ html.dark .card,
 html.dark .notification-popover,
 html.dark .popover-tabs,
 html.dark .popover-body,
+html.dark .message-card,
 html.dark .search-modal,
+html.dark .search-modal-box,
 html.dark .modal-container,
+html.dark .modal-box,
 html.dark .login-modal,
 html.dark .drawer-content,
+html.dark .drawer-header,
+html.dark .drawer-tabs,
+html.dark .drawer-footer,
 html.dark .q-card,
 html.dark .subject-q-card,
 html.dark .m-item,
@@ -2202,6 +2208,43 @@ html.dark .side-card,
 html.dark .q-detail-container,
 html.dark .practice-panel,
 html.dark .practice-card,
+html.dark .practice-setup-card,
+html.dark .hero-random-card,
+html.dark .custom-manifest-card,
+html.dark .custom-exam-panel,
+html.dark .tech-cat-card,
+html.dark .mode-box,
+html.dark .rank-board-card,
+html.dark .exam-records-summary,
+html.dark .history-card-item,
+html.dark .empty-history,
+html.dark .confirm-modal-box,
+html.dark .exam-top-bar,
+html.dark .exam-main-card,
+html.dark .exam-sheet-card,
+html.dark .exam-q-box,
+html.dark .exam-header,
+html.dark .sheet-card,
+html.dark .sheet-btn,
+html.dark .review-question-card,
+html.dark .empty-review,
+html.dark .review-opt-box,
+html.dark .option-item,
+html.dark .filter-pill-btn,
+html.dark .hist-header-btn,
+html.dark .custom-sub-pill,
+html.dark .stepper-box,
+html.dark .resume-card,
+html.dark .chat-card,
+html.dark .chat-header,
+html.dark .chat-input-area,
+html.dark .chat-container,
+html.dark .detail-header-bar,
+html.dark .moment-card,
+html.dark .moment-main-card,
+html.dark .comments-container-card,
+html.dark .empty-moments,
+html.dark .empty-detail-card,
 html.dark .user-stat-card,
 html.dark .author-card,
 html.dark .interview-panel,
@@ -2219,10 +2262,122 @@ html.dark .tab-content-wrap,
 html.dark .comment-card,
 html.dark .reply-box,
 html.dark .circle-sidebar-card,
-html.dark .profile-card {
+html.dark .profile-card,
+html.dark .profile-header-card,
+html.dark .stat-box,
+html.dark .profile-tabs-card,
+html.dark .footer,
+html.dark .admin-sidebar,
+html.dark .admin-header,
+html.dark .admin-card,
+html.dark .admin-table-wrap,
+html.dark .admin-modal,
+html.dark .auth-gate-card {
   background-color: #151f32 !important;
   border-color: #243247 !important;
   color: #cbd5e1 !important;
+}
+
+html.dark .admin-wrapper {
+  background: #0b1120 !important;
+  color: #cbd5e1 !important;
+}
+
+/* 次级背景与悬停背景（深色灰） */
+html.dark .chat-feed,
+html.dark .custom-sub-grid,
+html.dark .view-container .confirm-item-preview,
+html.dark .confirm-item-preview,
+html.dark .rank-row,
+html.dark .cat-icon-box,
+html.dark .step-btn,
+html.dark .opt-prefix,
+html.dark .opt-prefix-badge,
+html.dark .q-mono-num,
+html.dark .score-pill,
+html.dark .upload-area,
+html.dark .resume-upload-zone,
+html.dark .history-item,
+html.dark .custom-action-link,
+html.dark .custom-pri-btn,
+html.dark .cat-label-pill {
+  background-color: #1e293b !important;
+  border-color: #243247 !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark .custom-action-link:hover,
+html.dark .custom-pri-btn:hover,
+html.dark .cat-label-pill:hover {
+  background-color: #28374f !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+
+html.dark .custom-pri-btn.active {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+
+/* 按钮在深色模式下的适配（消除按钮白块） */
+html.dark .btn-secondary,
+html.dark .btn:not(.btn-primary):not(.btn-danger):not(.btn-danger-solid):not(.btn-streak) {
+  background-color: #1e293b !important;
+  border-color: #243247 !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark .btn-secondary:hover,
+html.dark .btn:not(.btn-primary):not(.btn-danger):not(.btn-danger-solid):not(.btn-streak):hover {
+  background-color: #28374f !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+
+/* 标题深色文字反转 */
+html.dark .hero-card-title,
+html.dark .manifest-card-title,
+html.dark .custom-panel-title,
+html.dark .mode-title,
+html.dark .rank-header-title,
+html.dark .rank-name,
+html.dark .hist-title,
+html.dark .empty-title,
+html.dark .confirm-title,
+html.dark .exam-active-title,
+html.dark .exam-q-stem,
+html.dark .opt-content,
+html.dark .opt-text,
+html.dark .sheet-title,
+html.dark .q-card-title,
+html.dark .preview-title,
+html.dark .card-title,
+html.dark .section-title,
+html.dark .profile-name,
+html.dark .modal-title,
+html.dark .drawer-title {
+  color: #f8fafc !important;
+}
+
+/* 次级文字反转 */
+html.dark .hero-card-desc,
+html.dark .manifest-label,
+html.dark .mode-desc,
+html.dark .mode-meta,
+html.dark .rank-header-sub,
+html.dark .rank-count,
+html.dark .stat-name,
+html.dark .empty-desc,
+html.dark .hist-meta-row,
+html.dark .timer-box,
+html.dark .confirm-desc,
+html.dark .sheet-legend,
+html.dark .answered-status-text,
+html.dark .card-desc,
+html.dark .upload-hint,
+html.dark .profile-bio {
+  color: #94a3b8 !important;
 }
 
 /* 核心解析展开区域（彻底消除白块） */

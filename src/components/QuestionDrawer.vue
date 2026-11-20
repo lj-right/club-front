@@ -166,7 +166,7 @@ function copyCode(code) {
   width: 780px;
   max-width: 90vw;
   height: 100vh;
-  background: #ffffff;
+  background: var(--bg-card);
   box-shadow: var(--shadow-drawer);
   display: flex;
   flex-direction: column;
@@ -198,7 +198,7 @@ function copyCode(code) {
   display: flex;
   padding: 0 24px;
   border-bottom: 1px solid var(--border-color);
-  background: #ffffff;
+  background: var(--bg-card);
 }
 .drawer-tab {
   padding: 12px 18px;
@@ -330,7 +330,7 @@ function copyCode(code) {
 .drawer-footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border-color);
-  background: #ffffff;
+  background: var(--bg-card);
   display: flex;
   justify-content: space-between;
   align-items: center;

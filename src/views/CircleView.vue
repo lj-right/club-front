@@ -240,7 +240,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 8px 14px;
@@ -269,7 +269,7 @@ onMounted(async () => {
 }
 
 .ch-tab.active {
-  background: #eff6ff;
+  background: var(--primary-light);
   color: var(--primary);
   font-weight: 700;
 }
@@ -287,7 +287,7 @@ onMounted(async () => {
 
 .circle-loading,
 .empty-moments {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 36px 20px;
@@ -311,7 +311,7 @@ onMounted(async () => {
 }
 
 .moment-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 12px 16px;

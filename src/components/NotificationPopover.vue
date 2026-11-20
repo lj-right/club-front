@@ -224,7 +224,7 @@ onMounted(() => {
   top: calc(100% + 8px);
   right: 0;
   width: 396px;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg, 10px);
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12), 0 3px 8px rgba(15, 23, 42, 0.05);
@@ -253,7 +253,7 @@ onMounted(() => {
   align-items: center;
   padding: 0 14px;
   border-bottom: 1px solid var(--border-color);
-  background: #ffffff;
+  background: var(--bg-card);
 }
 
 .tabs-left {
@@ -351,7 +351,7 @@ onMounted(() => {
 .popover-body {
   height: 300px;
   overflow: hidden;
-  background: #f8fafc;
+  background: var(--bg-page);
   display: flex;
   flex-direction: column;
 }
@@ -387,7 +387,7 @@ onMounted(() => {
   display: flex;
   gap: 11px;
   padding: 11px;
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 8px;
   border: 1px solid var(--border-color);
   cursor: pointer;

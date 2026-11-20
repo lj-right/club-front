@@ -21,31 +21,43 @@ const routes = [
     path: '/subject',
     name: 'Subject',
     component: SubjectView,
-    meta: { title: '题库大全 - 随风 Club' }
+    meta: { title: '题库 - 随风 Club' }
   },
   {
     path: '/practice',
     name: 'Practice',
     component: PracticeView,
-    meta: { title: '在线考场 - 随风 Club' }
+    meta: { title: '在线练习 - 随风 Club' }
   },
   {
     path: '/interview',
     name: 'Interview',
     component: InterviewView,
-    meta: { title: 'AI 模拟面试 - 随风 Club' }
+    meta: { title: 'AI 面试 - 随风 Club' }
   },
   {
     path: '/circle',
     name: 'Circle',
     component: CircleView,
-    meta: { title: '技术圈子 - 随风 Club' }
+    meta: { title: '交流论坛 - 随风 Club' }
+  },
+  {
+    path: '/circle/detail/:id',
+    name: 'CircleDetail',
+    component: () => import('@/views/CircleDetailView.vue'),
+    meta: { title: '动态详情 - 随风 Club' }
   },
   {
     path: '/profile',
     name: 'Profile',
     component: ProfileView,
     meta: { title: '个人中心 - 随风 Club' }
+  },
+  {
+    path: '/oauth/callback/:platform',
+    name: 'OAuthCallback',
+    component: () => import('@/views/oauth/CallbackView.vue'),
+    meta: { title: '第三方授权登录 - 随风 Club' }
   },
   {
     path: '/base',

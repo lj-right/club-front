@@ -14,6 +14,7 @@
     <QuestionDrawer />
     <MomentModal />
     <ReportModal />
+    <ImagePreviewModal />
   </div>
 </template>
 
@@ -25,17 +26,21 @@ import SearchModal from '@/components/SearchModal.vue'
 import QuestionDrawer from '@/components/QuestionDrawer.vue'
 import MomentModal from '@/components/MomentModal.vue'
 import ReportModal from '@/components/ReportModal.vue'
+import ImagePreviewModal from '@/components/ImagePreviewModal.vue'
 
 import { useAuthStore } from '@/stores/auth'
 import { useSubjectStore } from '@/stores/subject'
+import { useImagePreviewStore } from '@/stores/imagePreview'
 
 const authStore = useAuthStore()
 const subjectStore = useSubjectStore()
+const imagePreviewStore = useImagePreviewStore()
 
 onMounted(async () => {
-  // If user has token, load profile or default to 'suifeng'
+  // If user has token, probe backend status and load profile
   const token = localStorage.getItem('token')
   if (token) {
+    await authStore.checkLoginStatus()
     const savedUser = localStorage.getItem('userInfo')
     if (savedUser) {
       authStore.userInfo = JSON.parse(savedUser)
@@ -55,6 +60,75 @@ onMounted(async () => {
     console.log('Auth required event triggered:', e.detail)
     authStore.openLoginModal()
   })
+
+  // 全局图片点击预览委托：智能识别题目解析、Markdown 配图与动态图片
+  document.addEventListener('click', (e) => {
+    // 优先检查是否点击了 ans-img 遮罩或直接点击了图片
+    const wrap = e.target.closest('.ans-img-wrap')
+    let targetImg = null
+    if (wrap) {
+      targetImg = wrap.querySelector('img.ans-img')
+    } else {
+      targetImg = e.target.closest('img')
+    }
+
+    if (!targetImg) return
+
+    // 排除特定非大图元素（头像、微标、技术 SVG 图标等）
+    if (
+      targetImg.classList.contains('tech-svg-icon') ||
+      targetImg.classList.contains('m-avatar') ||
+      targetImg.classList.contains('avatar') ||
+      targetImg.classList.contains('comment-avatar') ||
+      targetImg.classList.contains('sub-reply-avatar') ||
+      targetImg.classList.contains('logo-img') ||
+      targetImg.classList.contains('user-avatar')
+    ) {
+      return
+    }
+
+    // 判定是否属于内容大图
+    const isAnsImg = targetImg.classList.contains('ans-img')
+    const isPreviewable = targetImg.hasAttribute('data-previewable')
+    const isMomentImg = targetImg.classList.contains('m-img')
+    const isInRichText = targetImg.closest('.summary-text') ||
+      targetImg.closest('.parse-body') ||
+      targetImg.closest('.q-answer-preview') ||
+      targetImg.closest('.m-images-grid')
+
+    if (isAnsImg || isPreviewable || isMomentImg || isInRichText) {
+      e.preventDefault()
+      e.stopPropagation()
+
+      // 提取同一内容块中的图片组（支持多图相册联动）
+      const container = targetImg.closest('.m-images-grid') ||
+        targetImg.closest('.summary-text') ||
+        targetImg.closest('.parse-body') ||
+        targetImg.closest('.q-answer-preview')
+
+      let list = []
+      let idx = 0
+      if (container) {
+        const imgs = Array.from(container.querySelectorAll('img.ans-img, img.m-img, img[data-previewable]'))
+        if (imgs.length > 1) {
+          list = imgs.map(img => img.currentSrc || img.src)
+          idx = imgs.indexOf(targetImg)
+          if (idx < 0) idx = 0
+        }
+      }
+
+      if (!list.length) {
+        list = [targetImg.currentSrc || targetImg.src]
+        idx = 0
+      }
+
+      imagePreviewStore.open({
+        images: list,
+        initialIndex: idx,
+        title: targetImg.alt || ''
+      })
+    }
+  }, true)
 })
 </script>
 
@@ -67,7 +141,7 @@ onMounted(async () => {
 }
 .main-body {
   flex: 1;
-  padding: 24px 0 40px;
+  padding: 19px 0 40px;
 }
 .main-body.admin-body {
   padding: 0;

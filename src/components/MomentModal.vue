@@ -11,7 +11,7 @@
         <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text-regular); margin-bottom: 6px;">
           选择发布板块:
         </label>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button
             v-for="ch in circleStore.channels.filter(c => c.id !== 'all')"
             :key="ch.id"
@@ -79,11 +79,11 @@ import { useCircleStore } from '@/stores/circle'
 
 const circleStore = useCircleStore()
 
-const selectedChannel = ref('tech')
+const selectedChannel = ref(circleStore.channels.find(c => c.id !== 'all')?.id || '101')
 const textContent = ref('')
 const sensitiveViolations = ref([])
 const commonTags = ['#高频面试', '#大厂面经', '#Spring源码', '#Redis架构', '#算法打卡', '#秋招冲刺']
-const selectedTags = ref(['#高频面试'])
+const selectedTags = ref([])
 const loading = ref(false)
 
 function checkText() {
@@ -103,16 +103,25 @@ async function handlePublish() {
   if (!textContent.value.trim()) return
   loading.value = true
   try {
+    let finalContent = textContent.value.trim()
+    if (selectedTags.value.length > 0) {
+      const existing = finalContent.match(/#[^\s#]+/g) || []
+      const toAdd = selectedTags.value.filter((t) => !existing.includes(t))
+      if (toAdd.length > 0) {
+        finalContent = finalContent + '\n' + toAdd.join(' ')
+      }
+    }
+
     const res = await circleStore.publishMoment({
-      content: textContent.value,
-      channel: selectedChannel.value,
-      tags: selectedTags.value
+      content: finalContent,
+      channel: selectedChannel.value
     })
     if (res.success) {
       textContent.value = ''
+      selectedTags.value = []
       sensitiveViolations.value = []
     } else {
-      alert(res.message)
+      alert(res.message || '发布失败')
     }
   } finally {
     loading.value = false
@@ -125,7 +134,8 @@ async function handlePublish() {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(4px);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   z-index: 1000;
   display: flex;
   align-items: center;

@@ -29,14 +29,15 @@
           @click="selectResult(item.id)"
         >
           <div class="search-item-top">
-            <span class="item-title">{{ item.title }}</span>
+            <span class="item-title" v-html="item.highlightTitle || item.title"></span>
             <span class="badge" :class="item.difficulty || 'medium'">
               {{ item.difficulty === 'easy' ? '简单' : item.difficulty === 'hard' ? '困难' : '中等' }}
             </span>
           </div>
           <div class="search-item-tags">
-            <span v-for="tag in item.labels || []" :key="tag" class="tag-pill">{{ tag }}</span>
-            <span v-for="c in item.company || []" :key="c" class="company-pill">{{ c }}</span>
+            <span v-for="cat in item.categoryNames || []" :key="'cat-' + cat" class="cat-pill">{{ cat }}</span>
+            <span v-for="tag in item.labels || []" :key="'tag-' + tag" class="tag-pill">{{ tag }}</span>
+            <span v-for="c in item.company || []" :key="'comp-' + c" class="company-pill">{{ c }}</span>
           </div>
         </div>
       </div>
@@ -166,6 +167,14 @@ onMounted(() => {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+.cat-pill {
+  font-size: 11px;
+  color: #0958d9;
+  background: #e6f4ff;
+  border: 1px solid #bae0ff;
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 .tag-pill {
   font-size: 11px;

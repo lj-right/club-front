@@ -29,28 +29,28 @@
           :class="{ active: $route.path === '/subject' }"
           @click="$router.push('/subject')"
         >
-          题库大全
+          题库
         </li>
         <li
           class="nav-item"
           :class="{ active: $route.path === '/practice' }"
           @click="$router.push('/practice')"
         >
-          在线考场
+          练习
         </li>
         <li
           class="nav-item"
           :class="{ active: $route.path === '/interview' }"
           @click="$router.push('/interview')"
         >
-          AI 模拟面试
+          AI 面试
         </li>
         <li
           class="nav-item"
-          :class="{ active: $route.path === '/circle' }"
+          :class="{ active: $route.path.startsWith('/circle') }"
           @click="$router.push('/circle')"
         >
-          技术圈子
+          论坛
         </li>
       </ul>
 
@@ -75,14 +75,30 @@
 
       <!-- 右侧操作与个人中心 -->
       <div class="header-actions">
-        <!-- 互动消息通知按钮 -->
-        <button class="btn-icon-nav" title="互动消息通知" @click="$router.push('/circle')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <span class="notice-dot"></span>
-        </button>
+        <!-- 白天/黑夜主题切换 (太阳/月亮发散效果) -->
+        <ThemeToggle />
+
+        <!-- 消息通知按钮与浮层 -->
+        <div class="notification-trigger-wrap" ref="notificationTriggerRef">
+          <button
+            class="btn-icon-nav"
+            :class="{ active: notificationOpen }"
+            title="消息通知"
+            @click.stop="toggleNotification"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span v-if="circleStore.hasUnread || circleStore.unreadCount > 0" class="notice-dot"></span>
+          </button>
+
+          <!-- 消息通知下拉面板 -->
+          <NotificationPopover
+            v-if="notificationOpen"
+            @close="notificationOpen = false"
+          />
+        </div>
 
         <!-- 用户名片与下拉菜单 -->
         <div class="user-menu-container">
@@ -111,17 +127,14 @@
           <!-- 用户下拉浮层 -->
           <div v-if="dropdownOpen && authStore.isLoggedIn" class="user-dropdown-menu" @click.outside="dropdownOpen = false">
             <div class="dropdown-item" @click="goToProfile">
-              <span>👤 个人主页</span>
+              <span>个人主页</span>
             </div>
             <div class="dropdown-item" @click="goToAdmin">
-              <span>⚙️ 后台管理系统 (/base)</span>
-            </div>
-            <div class="dropdown-item" @click="handleCheckin">
-              <span>{{ authStore.checkedIn ? '🔥 已打卡 (连胜42天)' : '🔥 今日打卡 +1' }}</span>
+              <span>后台管理系统</span>
             </div>
             <div class="dropdown-divider"></div>
             <div class="dropdown-item danger" @click="handleLogout">
-              <span>🚪 退出登录</span>
+              <span>退出登录</span>
             </div>
           </div>
         </div>
@@ -131,20 +144,49 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSubjectStore } from '@/stores/subject'
+import { useCircleStore } from '@/stores/circle'
+import NotificationPopover from '@/components/NotificationPopover.vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const subjectStore = useSubjectStore()
+const circleStore = useCircleStore()
 
 const dropdownOpen = ref(false)
+const notificationOpen = ref(false)
+const notificationTriggerRef = ref(null)
 
 const userInitial = computed(() => {
   const name = authStore.nickname || '随'
   return name.charAt(0)
+})
+
+function toggleNotification() {
+  notificationOpen.value = !notificationOpen.value
+  if (notificationOpen.value) {
+    dropdownOpen.value = false
+    circleStore.fetchUnreadMessages()
+  }
+}
+
+function handleGlobalClick(e) {
+  if (notificationTriggerRef.value && !notificationTriggerRef.value.contains(e.target)) {
+    notificationOpen.value = false
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('click', handleGlobalClick)
+  circleStore.checkUnread()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', handleGlobalClick)
 })
 
 function goToProfile() {
@@ -157,18 +199,24 @@ function goToAdmin() {
   router.push('/base')
 }
 
-function handleCheckin() {
-  authStore.toggleCheckIn()
-  dropdownOpen.value = false
-}
-
 function handleLogout() {
   dropdownOpen.value = false
   authStore.logout()
+  circleStore.hasUnread = false
+  circleStore.unreadMessages = []
+  circleStore.readMessages = []
 }
 </script>
 
 <style scoped>
+.notification-trigger-wrap {
+  position: relative;
+}
+.btn-icon-nav.active {
+  color: var(--primary);
+  border-color: var(--primary-border);
+  background: #eff6ff;
+}
 .user-menu-container {
   position: relative;
 }

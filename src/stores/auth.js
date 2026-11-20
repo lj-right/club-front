@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
-import { doLogin, getUserInfo, logOut, updateUserInfo } from '@/api/auth'
+import { doLogin, getUserInfo, logOut, updateUserInfo, isLogin, doOAuthLogin } from '@/api/auth'
 import { uploadFile } from '@/api/oss'
 
-const DEFAULT_AVATAR = 'http://127.0.0.1:9000/user/avatar/default_avatar.jpg'
+const DEFAULT_AVATAR = 'http://127.0.0.1:9005/user/avatar/default_avatar.jpg'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: localStorage.getItem('token') || '',
+    token: localStorage.getItem('token') || localStorage.getItem('adminToken') || '',
     userInfo: JSON.parse(localStorage.getItem('userInfo') || 'null'),
     loginModalOpen: false,
     checkedIn: localStorage.getItem('checkedIn_today') === '1',
@@ -47,6 +47,25 @@ export const useAuthStore = defineStore('auth', {
           return { success: true }
         } else {
           return { success: false, message: res?.message || '验证码错误或已过期' }
+        }
+      } catch (err) {
+        return { success: false, message: err.message || '网络连接失败' }
+      }
+    },
+    async oauthLogin(platform, code, state) {
+      try {
+        const res = await doOAuthLogin({ platform, code, state })
+        if (res && res.success && res.data) {
+          const tokenValue = res.data.tokenValue
+          this.token = tokenValue
+          localStorage.setItem('token', tokenValue)
+
+          const loginId = res.data.loginId || 'suifeng'
+          await this.loadUserInfo(loginId)
+          this.loginModalOpen = false
+          return { success: true }
+        } else {
+          return { success: false, message: res?.message || '第三方授权登录失败' }
         }
       } catch (err) {
         return { success: false, message: err.message || '网络连接失败' }
@@ -144,14 +163,42 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async updateProfile(updates) {
-      if (!this.userInfo) return
-      this.userInfo = { ...this.userInfo, ...updates }
-      localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
-      try {
-        await updateUserInfo(this.userInfo)
-      } catch (e) {
-        console.error(e)
+      if (!this.userInfo) {
+        throw new Error('当前未登录或未获取到用户信息')
       }
+      const payload = {
+        ...this.userInfo,
+        ...updates
+      }
+      // 必须确保携带 userName，后端 checkUserInfo 强校验了 userName
+      if (!payload.userName && this.userInfo?.userName) {
+        payload.userName = this.userInfo.userName
+      }
+      const res = await updateUserInfo(payload)
+      if (res && (res.success || res.code === 200) && res.data !== false) {
+        this.userInfo = { ...this.userInfo, ...payload }
+        localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+        if (this.userInfo.userName) {
+          await this.loadUserInfo(this.userInfo.userName)
+        }
+        return { success: true }
+      } else {
+        throw new Error(res?.message || '后端更新用户信息失败')
+      }
+    },
+    async checkLoginStatus() {
+      if (!this.token) return false
+      try {
+        const res = await isLogin()
+        if (res && res.success && res.data === false) {
+          await this.logout()
+          return false
+        }
+        return true
+      } catch (err) {
+        console.warn('isLogin probe error:', err)
+      }
+      return !!this.token
     }
   }
 })

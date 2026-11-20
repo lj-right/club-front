@@ -10,8 +10,13 @@ import {
   getReport,
   getScoreDetail,
   getSubjectDetail,
-  getPracticeRankList
+  getPracticeRankList,
+  getPracticeHistory,
+  giveUpPractice,
+  deletePractice,
+  getUnCompletePractice
 } from '@/api/practice'
+import { querySubjectInfo } from '@/api/subject'
 
 function formatSecondsToHHmmss(secs) {
   const s = Math.max(0, Math.floor(secs))
@@ -28,134 +33,25 @@ function formatDateTime(d = new Date()) {
 
 const HISTORY_STORAGE_KEY = 'sf_practice_exam_history'
 
-const DEFAULT_HISTORY = [
-  {
-    id: 18,
-    setId: 1,
-    title: '2024届Java核心技术高频考点必刷试卷',
-    score: 67,
-    total: 6,
-    correctCount: 4,
-    wrongCount: 2,
-    timeSpent: '12 分钟',
-    date: '2026-11-18 10:12:42',
-    report: {
-      title: '2024届Java核心技术高频考点必刷试卷',
-      score: 67,
-      total: 6,
-      correctCount: 4,
-      wrongCount: 2,
-      timeSpent: '12 分钟',
-      rankPercent: 82,
-      radarData: [
-        { name: 'Java基础核心', score: 75 },
-        { name: '多线程并发', score: 65 },
-        { name: 'MySQL调优', score: 70 },
-        { name: '架构设计', score: 60 },
-        { name: '算法实战', score: 65 }
-      ],
-      skills: [
-        { name: 'Java基础核心', star: 85 },
-        { name: '多线程与并发', star: 70 },
-        { name: 'MySQL与调优', star: 75 },
-        { name: 'Redis与分布式', star: 65 }
-      ],
-      detailedSubjects: [
-        {
-          id: 297,
-          title: '如何禁止指令重排序？',
-          type: 1,
-          typeName: '单选题',
-          isCorrect: true,
-          userAnswer: 1,
-          correctAnswer: [1],
-          options: [
-            { optionType: 1, content: '在变量前声明 volatile 关键字或插入内存屏障 (Memory Barrier)' },
-            { optionType: 2, content: '将类声明为 final 即可在编译期杜绝指令乱序' },
-            { optionType: 3, content: '指令重排序是操作系统底层行为，Java 语言层面完全不可控' },
-            { optionType: 4, content: '重写 ClassLoader 类加载器方法' }
-          ],
-          subjectParse: '在 Java 中，volatile 关键字除了可以保证变量的可见性，还有一个重要的作用就是防止 JVM 的指令重排序。在对变量进行读写操作时，JVM 会插入特定的内存屏障 (LoadLoad / LoadStore / StoreStore / StoreLoad) 来禁止特定类型的处理器重排序。'
-        },
-        {
-          id: 314,
-          title: '可中断锁和不可中断锁有什么区别？',
-          type: 1,
-          typeName: '单选题',
-          isCorrect: false,
-          userAnswer: 2,
-          correctAnswer: [1],
-          options: [
-            { optionType: 1, content: '可中断锁在等待锁过程中可响应中断（如 lockInterruptibly），而不可中断锁只能死等' },
-            { optionType: 2, content: '不可中断锁在获取失败时立即抛出 InterruptedException' },
-            { optionType: 3, content: 'synchronized 属于可中断锁，ReentrantLock 属于不可中断锁' },
-            { optionType: 4, content: '可中断锁仅在 JDK 1.6 之前支持，之后已被 Deprecated' }
-          ],
-          subjectParse: '可中断锁在获取锁的过程中可以被中断，例如 ReentrantLock.lockInterruptibly()，不需要一直等待拿到锁后才能退出；而 synchronized 属于不可中断锁，一旦线程申请了锁，就只能一直阻塞等待直到拿到锁。'
-        },
-        {
-          id: 11,
-          title: 'MySQL InnoDB 中的 B+ 树索引结构，为什么通常高度在 2~4 层就可以支撑千万级数据存储？',
-          type: 1,
-          typeName: '单选题',
-          isCorrect: true,
-          userAnswer: 1,
-          correctAnswer: [1],
-          options: [
-            { optionType: 1, content: 'InnoDB 页大小默认 16KB，非叶子节点仅存主键和指针，单页可容纳千余个指针，扇出极高' },
-            { optionType: 2, content: '因为每层节点通过哈希分片直接对齐物理扇区' },
-            { optionType: 3, content: '因为 B+ 树仅在内存中展开，磁盘上存为连续数组' },
-            { optionType: 4, content: '因为叶子节点只存储 1 字节状态位' }
-          ],
-          subjectParse: 'InnoDB 页大小默认 16KB，非叶子节点仅存放主键 ID 和子页指针（约 14 字节），单页可容纳千余个指针，三层 B+ 树可寻址 1000 * 1000 * 16 ≈ 2000 万行记录，仅需 2~4 次磁盘 I/O 即可定位目标数据。'
-        }
-      ]
-    }
-  },
-  {
-    id: 17,
-    setId: 2,
-    title: 'MySQL与Redis高并发高可用经典真题集',
-    score: 80,
-    total: 5,
-    correctCount: 4,
-    wrongCount: 1,
-    timeSpent: '15 分钟',
-    date: '2026-11-18 10:06:06',
-    report: {
-      title: 'MySQL与Redis高并发高可用经典真题集',
-      score: 80,
-      total: 5,
-      correctCount: 4,
-      wrongCount: 1,
-      timeSpent: '15 分钟',
-      rankPercent: 88,
-      radarData: [
-        { name: 'Java基础核心', score: 85 },
-        { name: '多线程并发', score: 80 },
-        { name: 'MySQL调优', score: 90 },
-        { name: '架构设计', score: 75 },
-        { name: '算法实战', score: 78 }
-      ],
-      skills: [
-        { name: 'MySQL调优', star: 90 },
-        { name: 'Redis缓存实战', star: 85 },
-        { name: '分布式锁机制', star: 80 }
-      ],
-      detailedSubjects: []
-    }
+// Clean up legacy mock data from storage on module load
+try {
+  const raw = localStorage.getItem(HISTORY_STORAGE_KEY)
+  if (raw && (raw.includes('2024届Java核心技术') || raw.includes('MySQL与Redis高并发'))) {
+    localStorage.removeItem(HISTORY_STORAGE_KEY)
   }
-]
+} catch (_) {}
 
 function getStoredHistory() {
   try {
     const raw = localStorage.getItem(HISTORY_STORAGE_KEY)
     if (raw) {
       const list = JSON.parse(raw)
-      if (Array.isArray(list) && list.length > 0) return list
+      if (Array.isArray(list)) {
+        return list.filter((item) => item.id !== 18 && item.id !== 17 && item.title !== '2024届Java核心技术高频考点必刷试卷' && item.title !== 'MySQL与Redis高并发高可用经典真题集')
+      }
     }
   } catch (_) {}
-  return DEFAULT_HISTORY
+  return []
 }
 
 function saveStoredHistory(history) {
@@ -265,9 +161,14 @@ export const usePracticeStore = defineStore('practice', {
         if (res && res.success && res.data) {
           const d = res.data
           this.practiceId = d.practiceId
-          this.examTitle = d.title || '随风 Club · 全真自适应专项在线考场'
+          this.examTitle = d.title || '在线考场模拟考试'
 
           const rawSubjects = d.subjectList || []
+          if (rawSubjects.length === 0) {
+            alert('该试卷暂无考题数据')
+            return
+          }
+
           const loadedQuestions = await Promise.all(
             rawSubjects.map(async (item) => {
               try {
@@ -321,9 +222,12 @@ export const usePracticeStore = defineStore('practice', {
           this.timerSeconds = 45 * 60
           this.isExamActive = true
           this.startTimer()
+        } else {
+          alert('获取试卷考题失败，请检查服务连接')
         }
       } catch (e) {
         console.error('startExamBySet error:', e)
+        alert('启动考场失败，请确认后端考场服务正常运行')
       } finally {
         this.loadingExam = false
       }
@@ -333,18 +237,19 @@ export const usePracticeStore = defineStore('practice', {
       await this.startExamBySet(1)
     },
 
-    async startCustomPractice(assembleIds = ['101-1']) {
+    async startCustomPractice(assembleIds = []) {
+      if (!assembleIds || assembleIds.length === 0) return
       this.loadingExam = true
       try {
         const addRes = await addPractice(assembleIds)
         if (addRes && addRes.success && addRes.data && addRes.data.setId) {
           await this.startExamBySet(addRes.data.setId)
         } else {
-          await this.startExamBySet(2) // fallback to set 2
+          alert('自定义组卷失败，请重试')
         }
       } catch (e) {
-        console.warn('startCustomPractice fallback to set 2:', e)
-        await this.startExamBySet(2)
+        console.warn('startCustomPractice error:', e)
+        alert('组卷服务异常，请稍后再试')
       } finally {
         this.loadingExam = false
       }
@@ -368,74 +273,92 @@ export const usePracticeStore = defineStore('practice', {
       }
     },
 
+    async saveCurrentAnswerToBackend(idx = null) {
+      const qIdx = idx !== null ? idx : this.currentIndex
+      const q = this.questions[qIdx]
+      if (!q || !this.practiceId || !q.subjectId) return
+      const sId = q.subjectId
+      const userAns = this.userAnswers[sId] !== undefined ? this.userAnswers[sId] : this.userAnswers[qIdx]
+      if (userAns === undefined || userAns === '' || (Array.isArray(userAns) && userAns.length === 0)) return
+
+      try {
+        const timeSpent = this.examDuration - this.timerSeconds
+        const timeUse = formatSecondsToHHmmss(timeSpent)
+        let answerContents = []
+        let answerText = ''
+        if (q.type === 4) {
+          // 简答题/主观题：持久化文本内容至后端 practice_detail.answer_content
+          answerText = typeof userAns === 'string' ? userAns.trim() : String(userAns || '')
+          answerContents = [1]
+        } else if (q.type === 2) {
+          answerContents = Array.isArray(userAns) ? userAns : [userAns]
+        } else if (typeof userAns === 'number') {
+          answerContents = [userAns]
+        } else {
+          const n = parseInt(userAns, 10)
+          if (!isNaN(n)) answerContents = [n]
+        }
+
+        if (answerContents.length > 0 || answerText) {
+          await submitSubject({
+            practiceId: this.practiceId,
+            subjectId: q.subjectId,
+            subjectType: q.type || 1,
+            timeUse,
+            answerContents,
+            answerText
+          })
+        }
+      } catch (e) {
+        console.warn('submitSubject async error:', e)
+      }
+    },
+
     async selectAnswer(optionVal) {
       const curQ = this.currentQuestion
       if (!curQ) return
+      const sId = curQ.subjectId || curQ.id
 
       if (curQ.type === 2) {
-        let currentAnswers = Array.isArray(this.userAnswers[this.currentIndex])
-          ? [...this.userAnswers[this.currentIndex]]
-          : []
+        let currentAnswers = Array.isArray(this.userAnswers[sId])
+          ? [...this.userAnswers[sId]]
+          : (Array.isArray(this.userAnswers[this.currentIndex]) ? [...this.userAnswers[this.currentIndex]] : [])
         const pos = currentAnswers.indexOf(optionVal)
         if (pos > -1) {
           currentAnswers.splice(pos, 1)
         } else {
           currentAnswers.push(optionVal)
         }
+        this.userAnswers[sId] = currentAnswers
         this.userAnswers[this.currentIndex] = currentAnswers
       } else {
+        this.userAnswers[sId] = optionVal
         this.userAnswers[this.currentIndex] = optionVal
       }
 
-      // Synchronously submit answer to backend
-      if (this.practiceId && curQ.subjectId) {
-        try {
-          const timeSpent = this.examDuration - this.timerSeconds
-          const timeUse = formatSecondsToHHmmss(timeSpent)
-          let answerContents = []
-          if (curQ.type === 2) {
-            answerContents = Array.isArray(this.userAnswers[this.currentIndex])
-              ? this.userAnswers[this.currentIndex]
-              : [optionVal]
-          } else if (typeof optionVal === 'number') {
-            answerContents = [optionVal]
-          } else {
-            const n = parseInt(optionVal, 10)
-            if (!isNaN(n)) answerContents = [n]
-          }
-
-          if (answerContents.length > 0) {
-            await submitSubject({
-              practiceId: this.practiceId,
-              subjectId: curQ.subjectId,
-              subjectType: curQ.type || 1,
-              timeUse,
-              answerContents
-            })
-          }
-        } catch (e) {
-          console.warn('submitSubject async error:', e)
-        }
-      }
+      await this.saveCurrentAnswerToBackend()
     },
 
     toggleFlag() {
       this.flagged[this.currentIndex] = !this.flagged[this.currentIndex]
     },
 
-    nextQuestion() {
+    async nextQuestion() {
+      await this.saveCurrentAnswerToBackend()
       if (this.currentIndex < this.questions.length - 1) {
         this.currentIndex++
       }
     },
 
-    prevQuestion() {
+    async prevQuestion() {
+      await this.saveCurrentAnswerToBackend()
       if (this.currentIndex > 0) {
         this.currentIndex--
       }
     },
 
-    jumpToQuestion(index) {
+    async jumpToQuestion(index) {
+      await this.saveCurrentAnswerToBackend()
       if (index >= 0 && index < this.questions.length) {
         this.currentIndex = index
       }
@@ -450,7 +373,16 @@ export const usePracticeStore = defineStore('practice', {
       const timeUse = formatSecondsToHHmmss(timeSpent)
       const submitTime = formatDateTime(new Date())
 
-      // 1. Submit practice to backend
+      // 1. Flush all answers to backend
+      if (this.practiceId) {
+        await Promise.all(
+          this.questions.map(async (_, idx) => {
+            await this.saveCurrentAnswerToBackend(idx)
+          })
+        )
+      }
+
+      // 2. Submit practice to backend
       if (this.currentSetId && this.practiceId) {
         try {
           await submitPractice({
@@ -464,7 +396,7 @@ export const usePracticeStore = defineStore('practice', {
         }
       }
 
-      // 2. Query report and score details from backend
+      // 3. Query report, score details and subject details from backend
       let realReport = null
       let scoreDetails = []
       let detailedSubjects = []
@@ -491,22 +423,64 @@ export const usePracticeStore = defineStore('practice', {
         try {
           detailedSubjects = await Promise.all(
             this.questions.map(async (q) => {
+              let detailData = null
               try {
                 const detRes = await getSubjectDetail(this.practiceId, q.subjectId, q.type)
                 if (detRes && detRes.success && detRes.data) {
-                  return {
-                    ...q,
-                    detail: detRes.data
-                  }
+                  detailData = detRes.data
                 }
               } catch (_) {}
-              return { ...q, detail: null }
+
+              // Fallback to querySubjectInfo if parse is missing or empty
+              if (!detailData || !detailData.subjectParse) {
+                try {
+                  const subInfoRes = await querySubjectInfo(q.subjectId)
+                  if (subInfoRes && subInfoRes.success && subInfoRes.data) {
+                    const info = subInfoRes.data
+                    detailData = {
+                      ...(detailData || {}),
+                      subjectName: info.subjectName || q.title,
+                      subjectParse: info.subjectParse || info.subjectAnswer,
+                      subjectAnswer: info.subjectAnswer || info.subjectParse,
+                      labelNames: info.labelNames
+                    }
+                  }
+                } catch (_) {}
+              }
+
+              return {
+                ...q,
+                detail: detailData
+              }
             })
           )
         } catch (_) {}
+      } else {
+        // Fallback without practiceId
+        detailedSubjects = await Promise.all(
+          this.questions.map(async (q) => {
+            let detailData = null
+            try {
+              const subInfoRes = await querySubjectInfo(q.subjectId)
+              if (subInfoRes && subInfoRes.success && subInfoRes.data) {
+                const info = subInfoRes.data
+                detailData = {
+                  subjectName: info.subjectName || q.title,
+                  subjectParse: info.subjectParse || info.subjectAnswer,
+                  subjectAnswer: info.subjectAnswer || info.subjectParse,
+                  labelNames: info.labelNames
+                }
+              }
+            } catch (_) {}
+            return {
+              ...q,
+              detail: detailData
+            }
+          })
+        )
       }
 
-      const totalQ = this.questions.length || 4
+      const totalQ = this.questions.length || 0
       const answeredQ = Object.keys(this.userAnswers).length
 
       let correctCount = 0
@@ -516,45 +490,117 @@ export const usePracticeStore = defineStore('practice', {
       } else if (scoreDetails.length > 0) {
         correctCount = scoreDetails.filter((s) => s.isCorrect === 1).length
       } else {
-        correctCount = Math.max(1, Math.round(answeredQ * 0.8))
+        correctCount = 0
       }
 
-      const score = Math.round((correctCount / totalQ) * 100)
-      const baseScore = score || 65
-
-      const radarData = [
-        { name: 'Java基础核心', score: Math.min(100, Math.max(45, Math.round(baseScore * 1.05))) },
-        { name: '多线程并发', score: Math.min(100, Math.max(40, Math.round(baseScore * 0.95))) },
-        { name: 'MySQL调优', score: Math.min(100, Math.max(45, Math.round(baseScore * 1.02))) },
-        { name: '架构设计', score: Math.min(100, Math.max(40, Math.round(baseScore * 0.9))) },
-        { name: '算法实战', score: Math.min(100, Math.max(40, Math.round(baseScore * 0.98))) }
-      ]
+      const score = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0
 
       const formattedDetailedSubjects = (detailedSubjects.length > 0 ? detailedSubjects : this.questions).map((q, idx) => {
-        const uAns = this.userAnswers[idx]
-        const cAns = q.detail?.correctAnswer || [1]
-
-        let isCorrect = false
-        if (q.type === 2) {
-          const arrU = Array.isArray(uAns) ? [...uAns].sort() : (uAns ? [uAns] : [])
-          const arrC = [...cAns].sort()
-          isCorrect = arrU.length > 0 && JSON.stringify(arrU) === JSON.stringify(arrC)
-        } else {
-          const numU = Array.isArray(uAns) ? uAns[0] : Number(uAns)
-          isCorrect = cAns.includes(numU)
+        const sId = q.subjectId || q.id
+        let cAns = (q.detail?.correctAnswer && q.detail.correctAnswer.length > 0) ? q.detail.correctAnswer : []
+        if (cAns.length === 0 && q.options && q.options.length > 0) {
+          cAns = q.options.filter((o) => o.isCorrect).map((o) => o.optionType)
+        }
+        if (cAns.length === 0) {
+          cAns = [1]
         }
 
-        const parseText = q.detail?.subjectParse || q.subjectParse || q.summary || '考查该考点的核心设计机制与底层原理，掌握其在高并发生产环境中的实操避坑与调优策略。'
+        const rawUserAns = this.userAnswers[sId] !== undefined ? this.userAnswers[sId] : this.userAnswers[idx]
+        const userText = q.detail?.answerContent || (rawUserAns !== undefined && rawUserAns !== null ? String(rawUserAns) : '')
+        const respAns = q.detail?.respondAnswer && q.detail.respondAnswer.length > 0
+          ? q.detail.respondAnswer
+          : (Array.isArray(rawUserAns) ? rawUserAns : (rawUserAns !== undefined && rawUserAns !== null && rawUserAns !== '' ? [Number(rawUserAns)] : []))
+
+        const uAns = q.type === 4 ? userText : (respAns.length === 1 ? respAns[0] : respAns)
+
+        let isCorrect = false
+        // Check if scoreDetails explicitly rated this question
+        const foundScore = scoreDetails.find((s) => s.subjectId === q.subjectId)
+        if (foundScore && foundScore.isCorrect !== undefined) {
+          isCorrect = foundScore.isCorrect === 1
+        } else if (q.type === 4) {
+          // 简答题：填写了作答内容即视为主观作答完成
+          isCorrect = typeof uAns === 'string' ? uAns.trim().length > 0 : !!uAns
+        } else if (q.type === 2) {
+          const arrU = Array.isArray(uAns) ? [...uAns].map(Number).sort() : (uAns !== undefined && uAns !== null ? [Number(uAns)] : [])
+          const arrC = [...cAns].map(Number).sort()
+          isCorrect = arrU.length > 0 && JSON.stringify(arrU) === JSON.stringify(arrC)
+        } else {
+          const numU = Array.isArray(uAns) ? (uAns.length > 0 ? Number(uAns[0]) : null) : (uAns !== undefined && uAns !== null ? Number(uAns) : null)
+          isCorrect = numU !== null && cAns.map(Number).includes(numU)
+        }
+
+        let options = []
+        if (q.detail?.optionList && q.detail.optionList.length > 0) {
+          options = q.detail.optionList.map((opt) => ({
+            optionType: opt.optionType,
+            content: opt.optionContent,
+            isCorrect: opt.isCorrect === 1 || cAns.map(Number).includes(Number(opt.optionType))
+          }))
+        } else if (q.type === 3) {
+          options = [
+            { optionType: 1, content: '正确 (True)', isCorrect: cAns.map(Number).includes(1) },
+            { optionType: 0, content: '错误 (False)', isCorrect: cAns.map(Number).includes(0) }
+          ]
+        } else if (q.options && q.options.length > 0) {
+          options = q.options.map((opt) => ({
+            ...opt,
+            isCorrect: opt.isCorrect ?? cAns.map(Number).includes(Number(opt.optionType))
+          }))
+        }
+
+        const parseText = q.detail?.subjectParse || q.detail?.subjectAnswer || q.subjectParse || '该考点深度解析与官方标准解答已沉淀至题库。'
 
         return {
           ...q,
           index: idx,
+          title: q.detail?.subjectName || q.title || `考题 #${sId}`,
+          options,
           userAnswer: uAns,
           correctAnswer: cAns,
           isCorrect,
           subjectParse: parseText
         }
       })
+
+      // Construct dynamic radar and skill dimensions
+      let reportSkills = []
+      if (realReport?.skill && Array.isArray(realReport.skill) && realReport.skill.length > 0) {
+        // 同名标签去重合并取均值
+        const sMap = new Map()
+        realReport.skill.forEach((s) => {
+          const name = String(s.name || '核心技能').trim()
+          const star = typeof s.star === 'number' && !isNaN(s.star) ? Math.round(s.star) : (score ?? 0)
+          if (sMap.has(name)) {
+            const prev = sMap.get(name)
+            prev.star = Math.round((prev.star + star) / 2)
+          } else {
+            sMap.set(name, { name, star })
+          }
+        })
+        reportSkills = Array.from(sMap.values())
+      } else {
+        // Build skills dynamically from questions
+        const labelMap = {}
+        formattedDetailedSubjects.forEach((q) => {
+          const lbls = q.detail?.labelNames || ['核心技术']
+          lbls.forEach((l) => {
+            if (!labelMap[l]) labelMap[l] = { total: 0, correct: 0 }
+            labelMap[l].total++
+            if (q.isCorrect) labelMap[l].correct++
+          })
+        })
+        reportSkills = Object.keys(labelMap).slice(0, 6).map((l) => ({
+          name: l,
+          star: labelMap[l].total > 0 ? Math.round((labelMap[l].correct / labelMap[l].total) * 100) : 0
+        }))
+      }
+
+      // 控制 radarData 最多 5~6 个维度，保障雷达图多边形不拥挤
+      const radarData = reportSkills.slice(0, 6).map((s) => ({
+        name: s.name,
+        score: Math.min(100, Math.max(0, typeof s.star === 'number' && !isNaN(s.star) ? s.star : score))
+      }))
 
       this.examReport = {
         title: realReport?.title || this.examTitle,
@@ -563,44 +609,303 @@ export const usePracticeStore = defineStore('practice', {
         correctCount,
         wrongCount: Math.max(0, totalQ - correctCount),
         timeSpent: `${minSpent} 分钟`,
-        rankPercent: Math.min(99, Math.max(70, score + 10)),
+        rankPercent: score === 0 ? 0 : Math.min(99, Math.max(0, Math.round(score * 0.95))),
         radarData,
-        skills: realReport?.skill && realReport.skill.length > 0 ? realReport.skill : [
-          { name: 'Java基础核心', star: Math.round(baseScore * 0.95) },
-          { name: '多线程与并发', star: Math.round(baseScore * 0.88) },
-          { name: 'MySQL与调优', star: Math.round(baseScore * 1.02) },
-          { name: 'Redis与分布式', star: Math.round(baseScore * 0.9) }
-        ],
+        skills: reportSkills,
         detailedSubjects: formattedDetailedSubjects
       }
 
-      // Persist to examHistory
-      const historyItem = {
-        id: this.practiceId || Date.now(),
-        setId: this.currentSetId,
-        title: this.examReport.title,
-        score: this.examReport.score,
-        total: this.examReport.total,
-        correctCount: this.examReport.correctCount,
-        wrongCount: this.examReport.wrongCount,
-        timeSpent: this.examReport.timeSpent,
-        date: formatDateTime(new Date()),
-        report: JSON.parse(JSON.stringify(this.examReport))
-      }
-      this.examHistory.unshift(historyItem)
-      saveStoredHistory(this.examHistory)
+      // Persist to examHistory and sync with backend
+      try {
+        await this.loadExamHistory()
+      } catch (_) {}
 
       this.reportModalOpen = true
       await this.loadRankList()
     },
 
-    openReviewMode(filter = 'all', customReport = null) {
+    async loadExamHistory() {
+      try {
+        const res = await getPracticeHistory({ pageInfo: { pageNo: 1, pageSize: 50 } })
+        if (res && res.success && res.data) {
+          const records = res.data.records || res.data.result || []
+          this.examHistory = records.map((r) => ({
+            id: r.practiceId || r.id,
+            practiceId: r.practiceId || r.id,
+            setId: r.setId,
+            title: r.title,
+            date: r.practiceTime,
+            timeSpent: r.timeSpent,
+            score: r.score,
+            total: r.total || 0,
+            correctCount: r.correctCount || 0,
+            wrongCount: r.wrongCount !== undefined ? r.wrongCount : Math.max(0, (r.total || 0) - (r.correctCount || 0)),
+            completeStatus: r.completeStatus
+          }))
+          saveStoredHistory(this.examHistory)
+          return this.examHistory
+        }
+      } catch (e) {
+        console.warn('loadExamHistory error:', e)
+      }
+    },
+
+    async deleteHistoryItem(idOrPracticeId) {
+      const target = this.examHistory.find(
+        (h) => h.id === idOrPracticeId || h.practiceId === idOrPracticeId
+      )
+      const pId = target?.practiceId || target?.id || idOrPracticeId
+
+      // 乐观更新：先在前端移除
+      this.examHistory = this.examHistory.filter(
+        (h) => h.id !== idOrPracticeId && h.practiceId !== idOrPracticeId && h.id !== pId && h.practiceId !== pId
+      )
+      saveStoredHistory(this.examHistory)
+
+      if (pId) {
+        try {
+          await deletePractice(pId)
+          await this.loadExamHistory()
+        } catch (e) {
+          console.warn('deletePractice error, keeping local store update:', e)
+        }
+      }
+      return true
+    },
+
+    async batchDeleteHistory(idList = []) {
+      if (!idList || idList.length === 0) return true
+      const idSet = new Set(idList.map(String))
+      const targets = this.examHistory.filter(
+        (h) => idSet.has(String(h.id)) || idSet.has(String(h.practiceId))
+      )
+      const pIds = targets.map((t) => t.practiceId || t.id).filter(Boolean)
+
+      // 乐观更新：先在前端全量移除
+      this.examHistory = this.examHistory.filter(
+        (h) => !idSet.has(String(h.id)) && !idSet.has(String(h.practiceId))
+      )
+      saveStoredHistory(this.examHistory)
+
+      if (pIds.length > 0) {
+        try {
+          await Promise.allSettled(pIds.map((pId) => deletePractice(pId)))
+          await this.loadExamHistory()
+        } catch (e) {
+          console.warn('batchDeleteHistory error:', e)
+        }
+      }
+      return true
+    },
+
+    async clearAllHistory() {
+      const list = [...this.examHistory]
+      const pIds = list.map((h) => h.practiceId || h.id).filter(Boolean)
+
+      // 乐观更新：清空本地数据
+      this.examHistory = []
+      saveStoredHistory([])
+
+      if (pIds.length > 0) {
+        try {
+          await Promise.allSettled(pIds.map((pId) => deletePractice(pId)))
+          await this.loadExamHistory()
+        } catch (e) {
+          console.warn('clearAllHistory error:', e)
+        }
+      }
+      return true
+    },
+
+    async openReviewFromHistory(hist, filter = 'wrong') {
+      const practiceId = hist.practiceId || hist.id
+      const setId = hist.setId
+      if (!practiceId) return
+
+      let reportData = null
+      try {
+        const repRes = await getReport(practiceId)
+        if (repRes && repRes.success && repRes.data) {
+          reportData = repRes.data
+        }
+      } catch (e) {}
+
+      let scoreDetails = []
+      try {
+        const scRes = await getScoreDetail(practiceId)
+        if (scRes && scRes.success && Array.isArray(scRes.data)) {
+          scoreDetails = scRes.data
+        }
+      } catch (e) {}
+
+      let subjectList = []
+      try {
+        const sRes = await getSubjects(setId, practiceId)
+        if (sRes && sRes.success && sRes.data?.subjectList) {
+          subjectList = sRes.data.subjectList
+        }
+      } catch (e) {}
+
+      // Fallback: 如果 getSubjects 查不到题目列表，直接从 scoreDetails 反查该次考卷的全部考题 ID
+      if ((!subjectList || subjectList.length === 0) && scoreDetails.length > 0) {
+        subjectList = scoreDetails.map((s) => ({
+          subjectId: s.subjectId,
+          subjectType: s.subjectType
+        }))
+      }
+
+      const detailedSubjects = await Promise.all(
+        subjectList.map(async (item, idx) => {
+          let det = null
+          try {
+            const dRes = await getSubjectDetail(practiceId, item.subjectId, item.subjectType)
+            if (dRes && dRes.success && dRes.data) {
+              det = dRes.data
+            }
+          } catch (e) {}
+
+          if (!det || !det.subjectParse) {
+            try {
+              const infoRes = await querySubjectInfo(item.subjectId)
+              if (infoRes && infoRes.success && infoRes.data) {
+                det = {
+                  ...(det || {}),
+                  subjectName: infoRes.data.subjectName,
+                  subjectParse: infoRes.data.subjectParse || infoRes.data.subjectAnswer,
+                  labelNames: infoRes.data.labelNames
+                }
+              }
+            } catch (_) {}
+          }
+
+          const scoreItem = scoreDetails.find((s) => s.subjectId === item.subjectId)
+          const cAns = det?.correctAnswer || []
+          let options = (det?.optionList || []).map((o) => ({
+            optionType: o.optionType,
+            content: o.optionContent,
+            isCorrect: o.isCorrect === 1 || cAns.map(Number).includes(Number(o.optionType))
+          }))
+
+          if (item.subjectType === 3 && options.length === 0) {
+            options = [
+              { optionType: 1, content: '正确 (True)', isCorrect: cAns.map(Number).includes(1) },
+              { optionType: 0, content: '错误 (False)', isCorrect: cAns.map(Number).includes(0) }
+            ]
+          }
+
+          const respAns = det?.respondAnswer || []
+          const userText = det?.answerContent || ''
+
+          let isCorrect = false
+          if (scoreItem && scoreItem.isCorrect !== undefined) {
+            isCorrect = scoreItem.isCorrect === 1
+          } else if (item.subjectType === 4) {
+            isCorrect = userText.trim().length > 0
+          } else if (item.subjectType === 2) {
+            const arrU = [...respAns].map(Number).sort()
+            const arrC = [...cAns].map(Number).sort()
+            isCorrect = arrU.length > 0 && JSON.stringify(arrU) === JSON.stringify(arrC)
+          } else {
+            const numU = respAns.length > 0 ? Number(respAns[0]) : null
+            isCorrect = numU !== null && cAns.map(Number).includes(numU)
+          }
+
+          return {
+            id: item.subjectId,
+            subjectId: item.subjectId,
+            index: idx,
+            title: det?.subjectName || `考题 #${item.subjectId}`,
+            type: item.subjectType,
+            typeName: item.subjectType === 1 ? '单选题' : item.subjectType === 2 ? '多选题' : item.subjectType === 3 ? '判断题' : '简答题',
+            options,
+            userAnswer: item.subjectType === 4 ? userText : (respAns.length === 1 ? respAns[0] : respAns),
+            correctAnswer: cAns,
+            isCorrect,
+            subjectParse: det?.subjectParse || det?.subjectAnswer || '该考点标准解析已收录至题库。'
+          }
+        })
+      )
+
+      if (!detailedSubjects || detailedSubjects.length === 0) {
+        alert('暂未查询到该套试卷的作答解析明细')
+        return
+      }
+
+      const total = detailedSubjects.length || hist.total || 0
+      const correctCount = detailedSubjects.filter((q) => q.isCorrect).length
+      const wrongCount = Math.max(0, total - correctCount)
+      const score = hist.score !== undefined ? hist.score : (total > 0 ? Math.round((correctCount / total) * 100) : 0)
+
+      let reportSkills = []
+      if (reportData?.skill && Array.isArray(reportData.skill) && reportData.skill.length > 0) {
+        const sMap = new Map()
+        reportData.skill.forEach((s) => {
+          const name = String(s.name || '核心技能').trim()
+          const star = Math.round(Number(s.star) || 0)
+          if (sMap.has(name)) {
+            const prev = sMap.get(name)
+            prev.star = Math.round((prev.star + star) / 2)
+          } else {
+            sMap.set(name, { name, star })
+          }
+        })
+        reportSkills = Array.from(sMap.values())
+      }
+
+      const radarData = reportSkills.slice(0, 6).map((s) => ({
+        name: s.name,
+        score: Math.min(100, Math.max(0, typeof s.star === 'number' && !isNaN(s.star) ? s.star : score))
+      }))
+
+      this.examReport = {
+        title: hist.title || reportData?.title || '全真模拟试卷',
+        score,
+        total,
+        correctCount,
+        wrongCount,
+        timeSpent: hist.timeSpent || '10 分钟',
+        rankPercent: score === 0 ? 0 : Math.min(99, Math.max(0, Math.round(score * 0.95))),
+        skills: reportSkills,
+        radarData: radarData.length > 0 ? radarData : [],
+        detailedSubjects
+      }
+
+      this.reviewFilter = filter
+      this.isReviewMode = true
+      this.reportModalOpen = false
+    },
+
+    async openReportFromHistory(hist) {
+      await this.openReviewFromHistory(hist, 'all')
+      this.isReviewMode = false
+      this.reportModalOpen = true
+    },
+
+    async openReviewMode(filter = 'all', customReport = null) {
       if (customReport) {
         this.examReport = customReport
+      }
+      if (!this.examReport || !this.examReport.detailedSubjects || this.examReport.detailedSubjects.length === 0) {
+        this.isReviewMode = false
+        return
       }
       this.reviewFilter = filter
       this.isReviewMode = true
       this.reportModalOpen = false
+    },
+
+    cleanLegacyMockData() {
+      try {
+        const raw = localStorage.getItem(HISTORY_STORAGE_KEY)
+        if (raw && (raw.includes('2024届Java核心技术') || raw.includes('MySQL与Redis高并发'))) {
+          localStorage.removeItem(HISTORY_STORAGE_KEY)
+        }
+      } catch (_) {}
+      this.examHistory = getStoredHistory()
+      if (this.isReviewMode && (!this.examReport || this.examReport.title?.includes('2024届Java核心技术') || this.examReport.title?.includes('MySQL与Redis高并发'))) {
+        this.isReviewMode = false
+        this.examReport = null
+      }
     },
 
     exitReviewMode() {
@@ -620,6 +925,38 @@ export const usePracticeStore = defineStore('practice', {
 
     closeReportModal() {
       this.reportModalOpen = false
+    },
+
+    /**
+     * 放弃当前练习 (真实调用 /practice/practice/detail/giveUp)
+     */
+    async abandonCurrentPractice() {
+      if (this.currentPracticeId) {
+        try {
+          await giveUpPractice(this.currentPracticeId)
+        } catch (err) {
+          console.warn('giveUpPractice error:', err)
+        }
+      }
+      this.currentPracticeId = null
+      this.currentPracticeSubjectList = []
+      this.examReport = null
+      this.activeTab = 'sets'
+    },
+
+    /**
+     * 获取未完成练习记录 (调用 /practice/practice/set/getUnCompletePractice)
+     */
+    async loadUnCompletePractice() {
+      try {
+        const res = await getUnCompletePractice({ pageNo: 1, pageSize: 5 })
+        if (res && res.success && res.data) {
+          return res.data
+        }
+      } catch (err) {
+        console.warn('loadUnCompletePractice error:', err)
+      }
+      return null
     }
   }
 })

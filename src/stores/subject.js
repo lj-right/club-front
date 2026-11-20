@@ -6,8 +6,11 @@ import {
   querySubjectInfo,
   getSubjectPage,
   subjectLiked,
-  getSubjectPageBySearch
+  getSubjectPageBySearch,
+  getContributeList,
+  getHotSubjectList
 } from '@/api/subject'
+import { formatQuestionTimeAgo } from '@/utils/format'
 
 const PRIMARY_NAME_TO_ID = {
   general: 1,
@@ -53,25 +56,8 @@ function formatViews(num) {
   return n.toString()
 }
 
-function formatTimeAgo(timeStr) {
-  if (!timeStr) return '刚刚'
-  try {
-    const s = String(timeStr).replace(/-/g, '/')
-    const past = new Date(s).getTime()
-    if (isNaN(past)) return '2天前'
-    const now = Date.now()
-    const diff = Math.floor((now - past) / 1000)
-    if (diff < 60) return '刚刚'
-    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`
-    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`
-    const days = Math.floor(diff / 86400)
-    if (days < 30) return `${days} 天前`
-    const months = Math.floor(days / 30)
-    if (months < 12) return `${months} 个月前`
-    return `${Math.floor(months / 12)} 年前`
-  } catch (_) {
-    return '2天前'
-  }
+function formatTimeAgo(timeStr, fallbackSeed) {
+  return formatQuestionTimeAgo(timeStr, fallbackSeed)
 }
 
 export const useSubjectStore = defineStore('subject', {
@@ -96,6 +82,10 @@ export const useSubjectStore = defineStore('subject', {
     todayQuestions: [],
     loadingTodayQuestions: false,
 
+    // 全站高频题目榜（Redis随机缓存5道，有效期1天）
+    hotQuestionsList: [],
+    loadingHotQuestions: false,
+
     // Drawer state
     drawerOpen: false,
     currentQuestion: null,
@@ -104,7 +94,10 @@ export const useSubjectStore = defineStore('subject', {
     // Global search
     searchModalOpen: false,
     searchQuery: '',
-    searchResults: []
+    searchResults: [],
+
+    // 出题贡献榜
+    contributeList: []
   }),
   getters: {
     currentSubCategoryList: (state) => {
@@ -120,7 +113,10 @@ export const useSubjectStore = defineStore('subject', {
       return state.questions
     },
     hotQuestions: (state) => {
-      return [...state.questions].sort((a, b) => (b.readCount || 0) - (a.readCount || 0)).slice(0, 10)
+      if (state.hotQuestionsList && state.hotQuestionsList.length > 0) {
+        return state.hotQuestionsList
+      }
+      return [...state.questions].sort((a, b) => (b.readCount || 0) - (a.readCount || 0)).slice(0, 5)
     }
   },
   actions: {
@@ -317,12 +313,15 @@ export const useSubjectStore = defineStore('subject', {
           this.questions = records.map((d) => {
             const diffText = diffMap[d.subjectDifficult] || '中等'
             const typeText = typeMap[d.subjectType] || '简答题'
-            const viewsCount = d.readCount || 0
+            const viewsCount = d.readCount != null ? Number(d.readCount) : 0
             const viewsFormatted = formatViews(viewsCount)
             const summaryText = (d.subjectParse || d.subjectAnswer || '').trim()
 
+            const qId = d.id || d.subjectId
+            const rawTime = d.updateTime || d.updatedTime || d.modifyTime || d.createdTime || d.createTime || d.gmtModified || d.gmtCreate
+
             return {
-              id: d.id,
+              id: qId,
               title: d.subjectName,
               primaryCat: pDbId,
               subCat: d.categoryId || categoryId,
@@ -331,7 +330,7 @@ export const useSubjectStore = defineStore('subject', {
               type: typeText,
               views: viewsFormatted,
               readCount: viewsCount,
-              timeAgo: formatTimeAgo(d.createdTime || d.updateTime),
+              timeAgo: formatTimeAgo(rawTime, qId),
               author: d.settleName || d.createdBy || '随风',
               summary: summaryText,
               answer: summaryText,
@@ -372,16 +371,18 @@ export const useSubjectStore = defineStore('subject', {
           this.todayQuestions = res.data.result.map((d) => {
             const diffText = diffMap[d.subjectDifficult] || '中等'
             const typeText = typeMap[d.subjectType] || '简答题'
-            const viewsCount = d.readCount || 10000
+            const viewsCount = d.readCount != null ? Number(d.readCount) : 0
             const summaryText = (d.subjectParse || d.subjectAnswer || '').trim()
+            const qId = d.id || d.subjectId
+            const rawTime = d.updateTime || d.updatedTime || d.modifyTime || d.createdTime || d.createTime || d.gmtModified || d.gmtCreate
             return {
-              id: d.id,
+              id: qId,
               title: d.subjectName,
               difficulty: diffText,
               type: typeText,
               views: formatViews(viewsCount),
               readCount: viewsCount,
-              timeAgo: formatTimeAgo(d.createdTime || d.updateTime),
+              timeAgo: formatTimeAgo(rawTime, qId),
               author: d.settleName || d.createdBy || '架构专家',
               summary: summaryText,
               answer: summaryText,
@@ -396,6 +397,42 @@ export const useSubjectStore = defineStore('subject', {
         console.error('fetchRandomTodayQuestions error:', err)
       } finally {
         this.loadingTodayQuestions = false
+      }
+    },
+
+    async fetchHotSubjectList() {
+      this.loadingHotQuestions = true
+      try {
+        const res = await getHotSubjectList()
+        if (res && res.success && Array.isArray(res.data)) {
+          const diffMap = { 1: '简单', 2: '中等', 3: '困难' }
+          const typeMap = { 1: '单选题', 2: '多选题', 3: '判断题', 4: '简答题' }
+          this.hotQuestionsList = res.data.map((d) => {
+            const diffText = diffMap[d.subjectDifficult] || '中等'
+            const typeText = typeMap[d.subjectType] || '简答题'
+            const viewsCount = d.readCount || 95000
+            const summaryText = (d.subjectParse || d.subjectAnswer || '').trim()
+            const qId = d.id || d.subjectId
+            return {
+              id: qId,
+              title: d.subjectName || '高频真题',
+              difficulty: diffText,
+              type: typeText,
+              author: d.settleName || d.createdBy || '架构专家',
+              timeAgo: formatTimeAgo(d.createdTime, qId),
+              views: formatViews(viewsCount),
+              rawViews: viewsCount,
+              summary: summaryText,
+              answer: summaryText,
+              tags: d.labelNames && d.labelNames.length > 0 ? d.labelNames : [typeText],
+              company: ['全站高频']
+            }
+          })
+        }
+      } catch (err) {
+        console.error('fetchHotSubjectList error:', err)
+      } finally {
+        this.loadingHotQuestions = false
       }
     },
 
@@ -429,15 +466,18 @@ export const useSubjectStore = defineStore('subject', {
           if (res && res.success && res.data) {
             const d = res.data
             const summaryText = (d.subjectParse || d.subjectAnswer || this.currentQuestion?.answer || '').trim()
+            const qId = d.id || questionId
+            const rawTime = d.updateTime || d.updatedTime || d.modifyTime || d.createdTime || d.createTime || d.gmtModified || d.gmtCreate
             this.currentQuestion = {
               ...this.currentQuestion,
-              id: d.id || questionId,
+              id: qId,
               title: d.subjectName || this.currentQuestion?.title,
               answer: summaryText,
               summary: summaryText,
               labels: d.labelNames || this.currentQuestion?.labels || ['核心考点'],
               liked: d.liked,
-              likedCount: d.likedCount || this.currentQuestion?.likes || 0
+              likedCount: d.likedCount || this.currentQuestion?.likes || 0,
+              timeAgo: formatTimeAgo(rawTime, qId)
             }
           }
         } catch (e) {
@@ -508,12 +548,43 @@ export const useSubjectStore = defineStore('subject', {
       this.searchModalOpen = false
     },
 
-    handleSearch(query) {
+    async handleSearch(query) {
       this.searchQuery = query
       if (!query.trim()) {
         this.searchResults = this.questions.slice(0, 6)
         return
       }
+      try {
+        const res = await getSubjectPageBySearch({
+          keyWord: query.trim(),
+          pageNo: 1,
+          pageSize: 20
+        })
+        if (res && res.success && res.data && Array.isArray(res.data.result) && res.data.result.length > 0) {
+          const diffMap = { 1: 'easy', 2: 'medium', 3: 'hard' }
+          this.searchResults = res.data.result.map((d) => {
+            const qId = d.subjectId || d.id
+            const rawTime = d.updateTime || d.updatedTime || d.modifyTime || d.createdTime || d.createTime || d.gmtModified || d.gmtCreate
+            return {
+              id: qId,
+              title: d.subjectName ? d.subjectName.replace(/<[^>]+>/g, '') : '',
+              highlightTitle: d.subjectName || '',
+              difficulty: diffMap[d.subjectDifficult] || 'medium',
+              labels: d.labelNames && d.labelNames.length > 0 ? d.labelNames : ['核心考点'],
+              categoryNames: d.categoryNames || [],
+              company: ['大厂真题'],
+              answer: d.subjectAnswer || '',
+              summary: d.subjectParse || d.subjectAnswer || '',
+              timeAgo: formatTimeAgo(rawTime, qId)
+            }
+          })
+          return
+        }
+      } catch (err) {
+        console.warn('Backend search error, falling back to local filter:', err)
+      }
+
+      // 降级回退：本地内存模糊搜索
       const qLower = query.toLowerCase()
       this.searchResults = this.questions.filter((item) => {
         return (
@@ -523,6 +594,17 @@ export const useSubjectStore = defineStore('subject', {
           (item.author && item.author.toLowerCase().includes(qLower))
         )
       })
+    },
+
+    async fetchContributeList() {
+      try {
+        const res = await getContributeList()
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          this.contributeList = res.data
+        }
+      } catch (err) {
+        console.warn('Failed to fetch contribute list:', err)
+      }
     }
   }
 })

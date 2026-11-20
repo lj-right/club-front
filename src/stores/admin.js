@@ -22,10 +22,12 @@ import {
   addRole,
   updateRole,
   deleteRole,
+  addRolePermission,
+  getUserPermission,
   saveSensitiveWord,
   removeSensitiveWord
 } from '@/api/admin'
-import { QUESTIONS_DATA, PRIMARY_CATEGORIES, SUB_CATEGORIES } from '@/assets/mock_data'
+import { PRIMARY_CATEGORIES, SUB_CATEGORIES } from '@/assets/mock_data'
 
 export const useAdminStore = defineStore('admin', {
   state: () => ({
@@ -34,7 +36,7 @@ export const useAdminStore = defineStore('admin', {
       id: 1,
       userName: 'admin',
       nickName: '超级管理员',
-      avatar: 'http://127.0.0.1:9000/user/avatar/default_avatar.jpg',
+      avatar: 'http://127.0.0.1:9005/user/avatar/default_avatar.jpg',
       role: 'super_user',
       roleName: '超级管理员'
     },
@@ -219,6 +221,12 @@ export const useAdminStore = defineStore('admin', {
           localStorage.setItem('adminToken', this.adminToken)
           // Also set as active token for requests
           localStorage.setItem('token', this.adminToken)
+          try {
+            const infoRes = await getAdminUserInfo('admin')
+            if (infoRes && infoRes.success && infoRes.data) {
+              localStorage.setItem('adminInfo', JSON.stringify(infoRes.data))
+            }
+          } catch (_) {}
           this.isAuthModalOpen = false
           await this.initAdminData()
           return true
@@ -371,63 +379,86 @@ export const useAdminStore = defineStore('admin', {
     },
 
     /**
-     * 分页/搜索题目数据
+     * 分页/搜索题目数据 (真实调用后端 getSubjectPage / getSubjectPageBySearch)
      */
     async fetchSubjects(keyword = '') {
       try {
-        const loaded = []
-        // 先拉取数据库真实存在的 5 道题目
-        for (let qid = 1; qid <= 5; qid++) {
-          try {
-            const qInfo = await querySubjectInfo(qid)
-            if (qInfo && qInfo.success && qInfo.data) {
-              const d = qInfo.data
-              const diffMap = { 1: '简单', 2: '中等', 3: '困难' }
-              const typeMap = { 1: '单选', 2: '多选', 3: '判断', 4: '简答' }
-              loaded.push({
-                id: d.id,
-                title: d.subjectName,
-                type: typeMap[d.subjectType] || '简答',
-                typeCode: d.subjectType || 4,
-                difficulty: diffMap[d.subjectDifficult] || '中等',
-                difficultyCode: d.subjectDifficult || 2,
-                score: d.subjectScore || 5,
-                categoryName: d.categoryNames ? d.categoryNames.join(', ') : 'Java基础',
-                labelNames: d.labelNames || ['核心考点'],
-                author: d.settleName || '随风',
-                answer: d.subjectAnswer || '',
-                parse: d.subjectParse || '',
-                options: d.optionList || [],
-                status: '已发布',
-                createdTime: '2026-11-16 17:00:00'
-              })
-            }
-          } catch (_) {}
+        let res
+        const diffMap = { 1: '简单', 2: '中等', 3: '困难' }
+        const typeMap = { 1: '单选', 2: '多选', 3: '判断', 4: '简答' }
+
+        if (keyword && keyword.trim()) {
+          // 调用后端 Elasticsearch 全文搜索
+          res = await getSubjectPageBySearch({
+            keyWord: keyword.trim(),
+            pageNo: 1,
+            pageSize: 50
+          })
+        } else {
+          // 调用后端分页查询接口
+          res = await getSubjectPage({
+            pageInfo: {
+              pageNo: this.currentSubjectPage || 1,
+              pageSize: 50
+            },
+            categoryId: this.subjectFilter.categoryId || 1,
+            labelId: this.subjectFilter.labelId || 1
+          })
         }
 
-        // 结合前端题目作为充实的数据列表
-        const mockMapped = QUESTIONS_DATA.map((q, idx) => ({
-          id: 100 + idx,
-          title: q.title,
-          type: q.type || '简答',
-          typeCode: q.type === '单选题' ? 1 : q.type === '多选题' ? 2 : 4,
-          difficulty: q.difficulty === 'easy' ? '简单' : q.difficulty === 'hard' ? '困难' : '中等',
-          difficultyCode: q.difficulty === 'easy' ? 1 : q.difficulty === 'hard' ? 3 : 2,
-          score: 10,
-          categoryName: q.primaryCat === 'backend' ? '后端开发' : '前端开发',
-          labelNames: q.labels || ['核心考点'],
-          author: q.author || '随风',
-          answer: q.answer || q.summary || '',
-          parse: q.duckTip || '',
-          options: q.options || [],
-          status: '已发布',
-          createdTime: '2026-11-15 12:00:00'
-        }))
-
-        this.subjects = [...loaded, ...mockMapped]
-        this.totalSubjectsCount = this.subjects.length
+        if (res && res.success && res.data && Array.isArray(res.data.result) && res.data.result.length > 0) {
+          this.subjects = res.data.result.map((d) => ({
+            id: d.subjectId || d.id,
+            title: d.subjectName ? d.subjectName.replace(/<[^>]+>/g, '') : '',
+            highlightTitle: d.subjectName || '',
+            type: typeMap[d.subjectType] || '简答',
+            typeCode: d.subjectType || 4,
+            difficulty: diffMap[d.subjectDifficult] || '中等',
+            difficultyCode: d.subjectDifficult || 2,
+            score: d.subjectScore || 5,
+            categoryName: d.categoryNames ? d.categoryNames.join(', ') : 'Java基础',
+            labelNames: d.labelNames || ['核心考点'],
+            author: d.settleName || d.createdBy || '随风',
+            answer: d.subjectAnswer || '',
+            parse: d.subjectParse || '',
+            options: d.optionList || [],
+            status: '已发布',
+            createdTime: d.createdTime || '2026-11-16 17:00:00'
+          }))
+          this.totalSubjectsCount = res.data.total || this.subjects.length
+        } else {
+          // 备用：拉取数据库已初始化的单题信息
+          const loaded = []
+          for (let qid = 1; qid <= 5; qid++) {
+            try {
+              const qInfo = await querySubjectInfo(qid)
+              if (qInfo && qInfo.success && qInfo.data) {
+                const d = qInfo.data
+                loaded.push({
+                  id: d.id,
+                  title: d.subjectName,
+                  type: typeMap[d.subjectType] || '简答',
+                  typeCode: d.subjectType || 4,
+                  difficulty: diffMap[d.subjectDifficult] || '中等',
+                  difficultyCode: d.subjectDifficult || 2,
+                  score: d.subjectScore || 5,
+                  categoryName: d.categoryNames ? d.categoryNames.join(', ') : 'Java基础',
+                  labelNames: d.labelNames || ['核心考点'],
+                  author: d.settleName || '随风',
+                  answer: d.subjectAnswer || '',
+                  parse: d.subjectParse || '',
+                  options: d.optionList || [],
+                  status: '已发布',
+                  createdTime: '2026-11-16 17:00:00'
+                })
+              }
+            } catch (_) {}
+          }
+          this.subjects = loaded
+          this.totalSubjectsCount = this.subjects.length
+        }
       } catch (err) {
-        console.warn('Failed to fetch subjects:', err)
+        console.warn('Failed to fetch subjects from backend:', err)
       }
     },
 
@@ -518,6 +549,29 @@ export const useAdminStore = defineStore('admin', {
     },
 
     /**
+     * 修改分类 (调用 /subject/subject/category/update)
+     */
+    async editCategory(form) {
+      try {
+        await updateCategory({
+          id: form.id,
+          categoryName: form.name,
+          categoryType: form.type,
+          parentId: form.parentId || 0
+        })
+      } catch (err) {
+        console.warn('Failed to update category:', err)
+      }
+      const list = form.type === 1 ? this.primaryCategories : this.subCategories
+      const target = list.find((c) => c.id === form.id)
+      if (target) {
+        target.name = form.name
+        if (form.parentId !== undefined) target.parentId = form.parentId
+      }
+      return true
+    },
+
+    /**
      * 删除分类
      */
     async removeCategory(id, type) {
@@ -554,6 +608,33 @@ export const useAdminStore = defineStore('admin', {
         sortNum: form.sortNum || 1
       })
       this.stats.totalLabels++
+      return true
+    },
+
+    /**
+     * 修改标签 (调用 /subject/subject/label/update)
+     */
+    async editLabel(form) {
+      try {
+        await updateLabel({
+          id: form.id,
+          labelName: form.name,
+          categoryId: form.categoryId,
+          sortNum: form.sortNum || 1
+        })
+      } catch (err) {
+        console.warn('Failed to update label:', err)
+      }
+      const target = this.labels.find((l) => l.id === form.id)
+      if (target) {
+        target.name = form.name
+        if (form.categoryId) {
+          target.categoryId = form.categoryId
+          const cat = this.subCategories.find((c) => c.id === form.categoryId)
+          if (cat) target.categoryName = cat.name
+        }
+        if (form.sortNum) target.sortNum = form.sortNum
+      }
       return true
     },
 
@@ -595,6 +676,21 @@ export const useAdminStore = defineStore('admin', {
     },
 
     /**
+     * 删除用户 (调用 /auth/user/delete)
+     */
+    async removeUser(userId) {
+      const u = this.users.find((user) => user.id === userId)
+      try {
+        await deleteUser({ id: userId, userName: u?.userName })
+      } catch (err) {
+        console.warn('Failed to delete user:', err)
+      }
+      this.users = this.users.filter((user) => user.id !== userId)
+      this.stats.totalUsers = this.users.length
+      return true
+    },
+
+    /**
      * 切换用户状态 (启用/禁用)
      */
     async toggleUserStatus(userId) {
@@ -612,14 +708,22 @@ export const useAdminStore = defineStore('admin', {
      * 新增角色
      */
     async createRole(form) {
+      const newRoleId = Date.now()
       try {
-        await addRole({
+        const res = await addRole({
           roleName: form.roleName,
           roleKey: form.roleKey
         })
+        const realId = (res && res.data && typeof res.data === 'number') ? res.data : newRoleId
+        if (form.permissions && form.permissions.length > 0) {
+          const permIds = form.permissions.map((_, idx) => 100 + idx)
+          try {
+            await addRolePermission({ roleId: realId, permissionIdList: permIds })
+          } catch (_) {}
+        }
       } catch (_) {}
       this.roles.push({
-        id: Date.now(),
+        id: newRoleId,
         roleName: form.roleName,
         roleKey: form.roleKey,
         description: form.description || '自定义业务权限分组',
@@ -627,6 +731,49 @@ export const useAdminStore = defineStore('admin', {
         permissions: form.permissions || ['subject:query']
       })
       return true
+    },
+
+    /**
+     * 修改角色 (调用 /auth/role/update)
+     */
+    async editRole(form) {
+      try {
+        await updateRole({
+          id: form.id,
+          roleName: form.roleName,
+          roleKey: form.roleKey
+        })
+        if (form.permissions && form.permissions.length > 0) {
+          const permIds = form.permissions.map((_, idx) => 100 + idx)
+          try {
+            await addRolePermission({ roleId: form.id, permissionIdList: permIds })
+          } catch (_) {}
+        }
+      } catch (err) {
+        console.warn('Failed to update role:', err)
+      }
+      const target = this.roles.find((r) => r.id === form.id)
+      if (target) {
+        target.roleName = form.roleName
+        target.roleKey = form.roleKey
+        if (form.permissions) target.permissions = form.permissions
+      }
+      return true
+    },
+
+    /**
+     * 查询用户具备的权限 (调用 /auth/permission/getPermission)
+     */
+    async fetchUserPermissions(userName = 'admin') {
+      try {
+        const res = await getUserPermission(userName)
+        if (res && res.success && res.data) {
+          return res.data
+        }
+      } catch (err) {
+        console.warn('getUserPermission error:', err)
+      }
+      return null
     },
 
     /**

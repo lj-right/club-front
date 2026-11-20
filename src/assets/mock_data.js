@@ -85,7 +85,7 @@ export const QUESTIONS_DATA = [
         views: "42.8k",
         likes: 1820,
         tags: ["Java 核心", "集合框架", "并发底层"],
-        summary: "JDK 1.8 采用『数组 + 链表 + 红黑树』架构，当链表长度 ≥ 8 且数组容量 ≥ 64 时树化；扩容阈值为 capacity * 0.75。2 的幂次方设计保证位运算代替取模，散列均匀。",
+        summary: "JDK 1.8 采用『数组 + 链表 + 红黑树』架构，当链表长度 ≥ 8 且数组容量 ≥ 64 时树化；扩容阈值为 capacity * 0.75。2 的幂次方设计保证位运算代替取模，散列均匀。\n\n![JDK 1.8 HashMap 数组链表红黑树内存拓扑图](https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1600&auto=format&fit=crop&q=80)",
         duckTip: "<strong>鸭鸭口诀：</strong>容量 2 的幂次方便位与取模 (hash & (length - 1))；扩容迁移巧用高位为 0 留在原位、高位为 1 移到原位 + 旧容量！",
         solutionHtml: `
           <div class="solution-h3">1. 底层存储结构与树化阈值</div>
@@ -739,160 +739,33 @@ export const QUESTIONS_DATA = [
       }
     ];
 
-export const PRACTICE_EXAM_DATA = [
-      {
-        id: 1,
-        type: "单选题",
-        title: "在 JDK 1.8 中，HashMap 链表转化为红黑树的临界阈值条件是什么？",
-        options: [
-          "A. 链表长度达到 8，且数组总容量达到 64",
-          "B. 链表长度达到 8，无需考虑数组总容量",
-          "C. 链表长度达到 6，数组总容量达到 32",
-          "D. 链表长度达到 16，负载因子达到 0.75"
-        ],
-        correct: 0,
-        explanation: "当链表长度 ≥ 8 且当前数组容量 ≥ 64 时转化为红黑树；若容量不足 64 则优先进行 resize 扩容。"
-      },
-      {
-        id: 2,
-        type: "单选题",
-        title: "以下关于 ThreadLocal 内存泄漏的说法中，正确的是哪一项？",
-        options: [
-          "A. Entry 的 Key 是强引用，因此无法被垃圾回收",
-          "B. Entry 的 Key 是弱引用，但 Value 是强引用，线程池复用下 Value 无法回收",
-          "C. 只要调用 threadLocal.set(null) 即可彻底避免内存泄漏",
-          "D. ThreadLocal 在现代 JDK 中已通过弱引用彻底解决了内存泄漏"
-        ],
-        correct: 1,
-        explanation: "Key 为 WeakReference，GC 时被清空为 null，但 Value 强引用依然挂在 Thread 对象的 ThreadLocalMap 上，必须调用 remove()。"
-      },
-      {
-        id: 3,
-        type: "单选题",
-        title: "在 MySQL InnoDB 引擎中，为什么辅助索引的叶子节点不直接存储整行数据的物理地址？",
-        options: [
-          "A. 为了防止辅助索引过大，减少 I/O",
-          "B. 存储主键值而非物理地址，可避免行发生移动或页分裂时修改所有辅助索引",
-          "C. InnoDB 根本不支持存储物理地址",
-          "D. 保证所有查询都必须经过主键索引回表以校验事务版本"
-        ],
-        correct: 1,
-        explanation: "当发生行更新或 B+ 树页分裂时行物理地址会改变，如果辅助索引存主键值，则无需更新辅助索引，极大降低维护代价。"
-      },
-      {
-        id: 4,
-        type: "单选题",
-        title: "在 Redis 中，当遇到海量并发查询不存在的数据，绕过缓存直接冲击底层数据库，这种现象被称为？",
-        options: [
-          "A. 缓存击穿",
-          "B. 缓存穿透",
-          "C. 缓存雪崩",
-          "D. 缓存污染"
-        ],
-        correct: 1,
-        explanation: "查无此数据被称为缓存穿透；单一热点 Key 失效称为击穿；大面积 Key 同时失效称为雪崩。"
-      },
-      {
-        id: 5,
-        type: "单选题",
-        title: "Redisson 分布式锁看门狗（Watchdog）在未手动指定 leaseTime 的情况下，默认的续期周期与锁租期分别是？",
-        options: [
-          "A. 续期周期 10 秒，锁初始租期 30 秒",
-          "B. 续期周期 5 秒，锁初始租期 15 秒",
-          "C. 续期周期 15 秒，锁初始租期 60 秒",
-          "D. 续期周期 30 秒，锁初始租期 30 秒"
-        ],
-        correct: 0,
-        explanation: "看门狗默认锁初始有效期为 30 秒，每隔 internalLockLeaseTime / 3（即 10 秒）自动续期重置为 30 秒。"
-      },
-      {
-        id: 6,
-        type: "单选题",
-        title: "分布式事务 Seata AT 模式中，一阶段提交的核心机制是什么？",
-        options: [
-          "A. 仅执行业务 SQL，等待二阶段集中写日志",
-          "B. 生成前后镜像并申请全局锁，与业务数据在同一本地事务中提交",
-          "C. 使用两阶段全局 XA 锁锁定底层数据库物理连接",
-          "D. 依靠消息队列最大努力通知"
-        ],
-        correct: 1,
-        explanation: "一阶段生成 beforeImage 和 afterImage，在本地事务中提交业务数据与 undo_log 并释放本地锁，极大缩短持锁时间。"
-      },
-      {
-        id: 7,
-        type: "单选题",
-        title: "Spring Cloud Gateway 底层采用的核心反应式网络引擎是？",
-        options: [
-          "A. Tomcat NIO",
-          "B. Undertow",
-          "C. Netty",
-          "D. Jetty"
-        ],
-        correct: 2,
-        explanation: "Gateway 基于 Spring 5 WebFlux 与 Netty 构建非阻塞反应式事件循环。"
-      },
-      {
-        id: 8,
-        type: "单选题",
-        title: "Vue 3 相比 Vue 2 响应式原理，采用 Proxy 的核心优势之一是？",
-        options: [
-          "A. 必须在初始化时对对象所有属性进行深度全量递归",
-          "B. 可以原生拦截数组通过索引修改元素及 length 修改",
-          "C. 不再需要虚拟 DOM 即可完成视图编译",
-          "D. 运行在服务端 Node.js 效率更高"
-        ],
-        correct: 1,
-        explanation: "Proxy 可以直接代理数组与对象的所有 13 种拦截操作，解决了 Vue2 无法监听数组索引与长度变化的缺陷。"
-      },
-      {
-        id: 9,
-        type: "单选题",
-        title: "在 Java 线程池中，当任务队列已满且线程数已达到 maximumPoolSize 时，若使用 CallerRunsPolicy 拒绝策略，任务将如何处理？",
-        options: [
-          "A. 直接抛出 RejectedExecutionException 异常",
-          "B. 静默丢弃，不执行也不报错",
-          "C. 交由提交任务的主调用者线程直接同步执行",
-          "D. 丢弃队列中最老的任务并重新入队"
-        ],
-        correct: 2,
-        explanation: "CallerRunsPolicy 会将任务退回给调用者线程执行，延缓新任务产生，提供反压保护。"
-      },
-      {
-        id: 10,
-        type: "单选题",
-        title: "在 MySQL 可重复读（RR）隔离级别下，当前读（如 SELECT ... FOR UPDATE）通过什么机制阻止其他事务并发插入导致幻读？",
-        options: [
-          "A. 仅通过 MVCC 视图快照",
-          "B. Next-Key Lock (行记录锁 + 间隙锁 Gap Lock)",
-          "C. 表级排他锁 (Table X-Lock)",
-          "D. 乐观锁版本号版本控制"
-        ],
-        correct: 1,
-        explanation: "当前读通过 Next-Key Lock 锁死索引记录及间隙，禁止其他事务在此期间 INSERT 新行。"
-      }
-    ];
+
 
 export const CIRCLE_MOMENTS_DATA = [
       {
         id: 1,
         author: "随风",
-        avatar: "http://127.0.0.1:9000/user/avatar/avatar_suifeng.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/avatar_suifeng.png",
         badge: "资深架构师",
         channel: "interview",
         channelName: "职场面经",
         time: "10分钟前",
         content: "刚面完字节电商广告后端三面，核心全程围绕【高并发下 Redis 缓存一致性与 Redisson 分布式锁实战】深挖！考官特别追问了：如果 Redis 主从切换瞬间锁丢失怎么办？大家一定要准备 Redlock 或降级双写方案！",
+        images: [
+          "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80"
+        ],
         likes: 124,
         isLiked: false,
         comments: [
-          { user: "CodeArt", avatar: "http://127.0.0.1:9000/user/avatar/avatar_codeart.png", text: "字节三面确实偏实战！感谢随风大佬的题库，刚才刚好刷到这题！" },
-          { user: "小明学Java", avatar: "http://127.0.0.1:9000/user/avatar/avatar_xiaoming.png", text: "请问 Redisson 的 Watchdog 机制考官有追问吗？" }
+          { user: "CodeArt", avatar: "http://127.0.0.1:9005/user/avatar/avatar_codeart.png", text: "字节三面确实偏实战！感谢随风大佬的题库，刚才刚好刷到这题！" },
+          { user: "小明学Java", avatar: "http://127.0.0.1:9005/user/avatar/avatar_xiaoming.png", text: "请问 Redisson 的 Watchdog 机制考官有追问吗？" }
         ]
       },
       {
         id: 2,
         author: "架构小哥",
-        avatar: "http://127.0.0.1:9000/user/avatar/avatar_jiagou.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/avatar_jiagou.png",
         badge: "中间件研发",
         channel: "architecture",
         channelName: "架构心得",
@@ -901,13 +774,13 @@ export const CIRCLE_MOMENTS_DATA = [
         likes: 89,
         isLiked: false,
         comments: [
-          { user: "极客老李", avatar: "http://127.0.0.1:9000/user/avatar/avatar_laoli.png", text: "非常赞同！还有全局锁超时的重试次数也需要结合业务调优。" }
+          { user: "极客老李", avatar: "http://127.0.0.1:9005/user/avatar/avatar_laoli.png", text: "非常赞同！还有全局锁超时的重试次数也需要结合业务调优。" }
         ]
       },
       {
         id: 3,
         author: "前端小菜鸟",
-        avatar: "http://127.0.0.1:9000/user/avatar/avatar_cainiao.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/avatar_cainiao.png",
         badge: "全栈开发者",
         channel: "tech",
         channelName: "技术交流",
@@ -920,7 +793,7 @@ export const CIRCLE_MOMENTS_DATA = [
       {
         id: 4,
         author: "算法大牛",
-        avatar: "http://127.0.0.1:9000/user/avatar/avatar_daniu.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/avatar_daniu.png",
         badge: "ACM金牌",
         channel: "interview",
         channelName: "职场面经",
@@ -929,13 +802,13 @@ export const CIRCLE_MOMENTS_DATA = [
         likes: 102,
         isLiked: false,
         comments: [
-          { user: "小明学Java", avatar: "http://127.0.0.1:9000/user/avatar/avatar_xiaoming.png", text: "收下这份面经秘籍！LRU 确实是高频考点！" }
+          { user: "小明学Java", avatar: "http://127.0.0.1:9005/user/avatar/avatar_xiaoming.png", text: "收下这份面经秘籍！LRU 确实是高频考点！" }
         ]
       },
       {
         id: 5,
         author: "测试喵",
-        avatar: "http://127.0.0.1:9000/user/avatar/avatar_miao.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/avatar_miao.png",
         badge: "测试专家",
         channel: "tech",
         channelName: "技术交流",

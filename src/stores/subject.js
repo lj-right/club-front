@@ -7,8 +7,7 @@ import {
   getSubjectPage,
   subjectLiked,
   getSubjectPageBySearch,
-  getContributeList,
-  getHotSubjectList
+  getContributeList
 } from '@/api/subject'
 import { formatQuestionTimeAgo } from '@/utils/format'
 
@@ -361,7 +360,9 @@ export const useSubjectStore = defineStore('subject', {
         const totalPages = Math.max(1, Math.floor(total / 6))
         // 随机挑选一个分页页码，覆盖全量题库
         const randomPage = Math.floor(Math.random() * Math.min(totalPages, 50)) + 1
+        const pDbId = this.getPrimaryDbId(this.currentPrimaryId)
         const res = await getSubjectPage({
+          categoryId: pDbId,
           pageNo: randomPage,
           pageSize: 6
         })
@@ -403,23 +404,30 @@ export const useSubjectStore = defineStore('subject', {
     async fetchHotSubjectList() {
       this.loadingHotQuestions = true
       try {
-        const res = await getHotSubjectList()
-        if (res && res.success && Array.isArray(res.data)) {
+        const pDbId = this.getPrimaryDbId(this.currentPrimaryId)
+        const res = await getSubjectPage({
+          categoryId: pDbId,
+          sortType: 1,
+          pageNo: 1,
+          pageSize: 5
+        })
+        if (res && res.success && res.data && Array.isArray(res.data.result)) {
           const diffMap = { 1: '简单', 2: '中等', 3: '困难' }
           const typeMap = { 1: '单选题', 2: '多选题', 3: '判断题', 4: '简答题' }
-          this.hotQuestionsList = res.data.map((d) => {
+          this.hotQuestionsList = res.data.result.map((d) => {
             const diffText = diffMap[d.subjectDifficult] || '中等'
             const typeText = typeMap[d.subjectType] || '简答题'
-            const viewsCount = d.readCount || 95000
+            const viewsCount = d.readCount != null ? Number(d.readCount) : 0
             const summaryText = (d.subjectParse || d.subjectAnswer || '').trim()
             const qId = d.id || d.subjectId
+            const rawTime = d.updateTime || d.updatedTime || d.modifyTime || d.createdTime || d.createTime || d.gmtModified || d.gmtCreate
             return {
               id: qId,
               title: d.subjectName || '高频真题',
               difficulty: diffText,
               type: typeText,
               author: d.settleName || d.createdBy || '架构专家',
-              timeAgo: formatTimeAgo(d.createdTime, qId),
+              timeAgo: formatTimeAgo(rawTime, qId),
               views: formatViews(viewsCount),
               rawViews: viewsCount,
               summary: summaryText,

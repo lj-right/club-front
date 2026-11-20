@@ -75,10 +75,12 @@ export function getContributeList() {
 
 /**
  * 全站高频题目榜（Redis随机缓存5道，有效期1天）
+ * @param {number} labelId - 标签id，默认传 0 表示全部
  */
-export function getHotSubjectList() {
+export function getHotSubjectList(labelId = 0) {
   return request({
     url: '/subject/subject/getHotSubjectList',
-    method: 'POST'
+    method: 'POST',
+    data: { labelId }
   })
 }

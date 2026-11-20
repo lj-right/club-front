@@ -27,6 +27,20 @@ export function getUnCompletePractice(pageInfo = { pageNo: 1, pageSize: 10 }) {
   })
 }
 
+export function getPracticeHistory(params = {}) {
+  let pageInfo = { pageNo: 1, pageSize: 20 }
+  if (params && params.pageInfo) {
+    pageInfo = params.pageInfo
+  } else if (params && (params.pageNo || params.pageSize)) {
+    pageInfo = params
+  }
+  return request({
+    url: '/practice/practice/set/getPracticeHistory',
+    method: 'POST',
+    data: { pageInfo }
+  })
+}
+
 export function addPractice(assembleIds) {
   return request({
     url: '/practice/practice/set/addPractice',
@@ -35,11 +49,12 @@ export function addPractice(assembleIds) {
   })
 }
 
-export function getSubjects(setId) {
+export function getSubjects(setId, practiceId = null) {
+  const data = typeof setId === 'object' && setId !== null ? setId : { setId, practiceId }
   return request({
     url: '/practice/practice/set/getSubjects',
     method: 'POST',
-    data: { setId }
+    data
   })
 }
 
@@ -75,11 +90,17 @@ export function getScoreDetail(practiceId) {
   })
 }
 
-export function getSubjectDetail(subjectId, subjectType = 1) {
+export function getSubjectDetail(practiceId, subjectId, subjectType = 1) {
+  let payload = {}
+  if (typeof practiceId === 'object' && practiceId !== null) {
+    payload = practiceId
+  } else {
+    payload = { practiceId, subjectId, subjectType }
+  }
   return request({
     url: '/practice/practice/detail/getSubjectDetail',
     method: 'POST',
-    data: { subjectId, subjectType }
+    data: payload
   })
 }
 
@@ -100,6 +121,13 @@ export function getPracticeRankList() {
 }
 
 export function giveUpPractice(practiceId) {
+  return request({
+    url: `/practice/practice/detail/giveUp?practiceId=${practiceId}`,
+    method: 'POST'
+  })
+}
+
+export function deletePractice(practiceId) {
   return request({
     url: `/practice/practice/detail/giveUp?practiceId=${practiceId}`,
     method: 'POST'

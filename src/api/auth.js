@@ -39,3 +39,19 @@ export function isLogin() {
     method: 'GET'
   })
 }
+
+export function getOAuthRenderUrl(platform) {
+  return request({
+    url: `/auth/oauth/render/${encodeURIComponent(platform)}`,
+    method: 'GET'
+  })
+}
+
+export function doOAuthLogin(data) {
+  return request({
+    url: '/auth/oauth/login',
+    method: 'POST',
+    data
+  })
+}
+

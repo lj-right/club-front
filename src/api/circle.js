@@ -86,3 +86,20 @@ export function hasUnreadMessages() {
     method: 'GET'
   })
 }
+
+/**
+ * 圈子动态点赞或取消点赞
+ * @param {number|string} momentId 动态ID
+ * @param {number} status 1点赞，0取消点赞
+ */
+export function likeMoment(momentId, status = 1) {
+  return request({
+    url: '/circle/circle/share/moment/like',
+    method: 'POST',
+    data: {
+      momentId: Number(momentId),
+      status
+    }
+  })
+}
+

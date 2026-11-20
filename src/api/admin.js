@@ -54,7 +54,7 @@ export function deleteUser(data) {
  */
 export function getSubjectPage(data) {
   return request({
-    url: '/subject/getSubjectPage',
+    url: '/subject/subject/getSubjectPage',
     method: 'POST',
     data
   })
@@ -62,7 +62,7 @@ export function getSubjectPage(data) {
 
 export function getSubjectPageBySearch(data) {
   return request({
-    url: '/subject/getSubjectPageBySearch',
+    url: '/subject/subject/getSubjectPageBySearch',
     method: 'POST',
     data
   })
@@ -70,7 +70,7 @@ export function getSubjectPageBySearch(data) {
 
 export function querySubjectInfo(id) {
   return request({
-    url: '/subject/querySubjectInfo',
+    url: '/subject/subject/querySubjectInfo',
     method: 'POST',
     data: { id }
   })
@@ -78,7 +78,7 @@ export function querySubjectInfo(id) {
 
 export function addSubject(data) {
   return request({
-    url: '/subject/add',
+    url: '/subject/subject/add',
     method: 'POST',
     data
   })
@@ -89,7 +89,7 @@ export function addSubject(data) {
  */
 export function queryPrimaryCategory(categoryType = 1) {
   return request({
-    url: '/subject/category/queryPrimaryCategory',
+    url: '/subject/subject/category/queryPrimaryCategory',
     method: 'POST',
     data: { categoryType }
   })
@@ -97,7 +97,7 @@ export function queryPrimaryCategory(categoryType = 1) {
 
 export function queryCategoryByPrimary(parentId, categoryType = 2) {
   return request({
-    url: '/subject/category/queryCategoryByPrimary',
+    url: '/subject/subject/category/queryCategoryByPrimary',
     method: 'POST',
     data: { parentId, categoryType }
   })
@@ -105,7 +105,7 @@ export function queryCategoryByPrimary(parentId, categoryType = 2) {
 
 export function queryCategoryAndLabel(id) {
   return request({
-    url: '/subject/category/queryCategoryAndLabel',
+    url: '/subject/subject/category/queryCategoryAndLabel',
     method: 'POST',
     data: { id }
   })
@@ -113,7 +113,7 @@ export function queryCategoryAndLabel(id) {
 
 export function addCategory(data) {
   return request({
-    url: '/subject/category/add',
+    url: '/subject/subject/category/add',
     method: 'POST',
     data
   })
@@ -121,7 +121,7 @@ export function addCategory(data) {
 
 export function updateCategory(data) {
   return request({
-    url: '/subject/category/update',
+    url: '/subject/subject/category/update',
     method: 'POST',
     data
   })
@@ -129,7 +129,7 @@ export function updateCategory(data) {
 
 export function deleteCategory(id) {
   return request({
-    url: '/subject/category/delete',
+    url: '/subject/subject/category/delete',
     method: 'POST',
     data: { id }
   })
@@ -140,7 +140,7 @@ export function deleteCategory(id) {
  */
 export function queryLabelByCategoryId(categoryId) {
   return request({
-    url: '/subject/label/queryLabelByCategoryId',
+    url: '/subject/subject/label/queryLabelByCategoryId',
     method: 'POST',
     data: { categoryId }
   })
@@ -148,7 +148,7 @@ export function queryLabelByCategoryId(categoryId) {
 
 export function addLabel(data) {
   return request({
-    url: '/subject/label/add',
+    url: '/subject/subject/label/add',
     method: 'POST',
     data
   })
@@ -156,7 +156,7 @@ export function addLabel(data) {
 
 export function updateLabel(data) {
   return request({
-    url: '/subject/label/update',
+    url: '/subject/subject/label/update',
     method: 'POST',
     data
   })
@@ -164,7 +164,7 @@ export function updateLabel(data) {
 
 export function deleteLabel(id) {
   return request({
-    url: '/subject/label/delete',
+    url: '/subject/subject/label/delete',
     method: 'POST',
     data: { id }
   })

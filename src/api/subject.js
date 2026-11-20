@@ -72,3 +72,13 @@ export function getContributeList() {
     method: 'POST'
   })
 }
+
+/**
+ * 全站高频题目榜（Redis随机缓存5道，有效期1天）
+ */
+export function getHotSubjectList() {
+  return request({
+    url: '/subject/subject/getHotSubjectList',
+    method: 'POST'
+  })
+}

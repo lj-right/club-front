@@ -301,8 +301,8 @@ function runCheck() {
   border: none;
 }
 
-.btn-primary { background: #2563eb; color: #ffffff; }
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.btn-primary:hover { background: #dbeafe; border-color: #93c5fd; color: #2563eb; }
 .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 .btn-secondary:hover { background: #e2e8f0; }
 

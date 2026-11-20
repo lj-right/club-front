@@ -33,6 +33,7 @@
               </div>
             </div>
             <div class="cat-actions" @click.stop>
+              <button class="btn-edit" @click="openEditModal(cat, 1)">✎</button>
               <button class="btn-del" @click="deleteCat(cat.id, 1)">✕</button>
             </div>
           </div>
@@ -59,6 +60,7 @@
             </div>
             <div class="cat-actions">
               <span class="badge-count">{{ sub.count || 120 }} 题</span>
+              <button class="btn-edit" @click="openEditModal(sub, 2)">✎</button>
               <button class="btn-del" @click="deleteCat(sub.id, 2)">✕</button>
             </div>
           </div>
@@ -71,7 +73,7 @@
       <div class="modal-card">
         <div class="modal-header">
           <h3 class="modal-title">
-            {{ modalType === 1 ? '新增一级技术大类' : '新增二级技术专项' }}
+            {{ editingId ? (modalType === 1 ? '编辑一级大类' : '编辑二级专项') : (modalType === 1 ? '新增一级技术大类' : '新增二级技术专项') }}
           </h3>
           <button class="modal-close" @click="showModal = false">✕</button>
         </div>
@@ -115,6 +117,7 @@ const adminStore = useAdminStore()
 const selectedPrimaryId = ref(1)
 const showModal = ref(false)
 const modalType = ref(1) // 1: 一级, 2: 二级
+const editingId = ref(null)
 const submitting = ref(false)
 
 const catForm = ref({
@@ -123,10 +126,21 @@ const catForm = ref({
 })
 
 function openModal(type) {
+  editingId.value = null
   modalType.value = type
   catForm.value = {
     name: '',
     parentId: selectedPrimaryId.value || 1
+  }
+  showModal.value = true
+}
+
+function openEditModal(item, type) {
+  editingId.value = item.id
+  modalType.value = type
+  catForm.value = {
+    name: item.name,
+    parentId: item.parentId || selectedPrimaryId.value || 1
   }
   showModal.value = true
 }
@@ -139,11 +153,20 @@ async function submitCat() {
 
   submitting.value = true
   try {
-    await adminStore.createCategory({
-      name: catForm.value.name.trim(),
-      type: modalType.value,
-      parentId: modalType.value === 1 ? 0 : catForm.value.parentId
-    })
+    if (editingId.value) {
+      await adminStore.editCategory({
+        id: editingId.value,
+        name: catForm.value.name.trim(),
+        type: modalType.value,
+        parentId: modalType.value === 1 ? 0 : catForm.value.parentId
+      })
+    } else {
+      await adminStore.createCategory({
+        name: catForm.value.name.trim(),
+        type: modalType.value,
+        parentId: modalType.value === 1 ? 0 : catForm.value.parentId
+      })
+    }
     showModal.value = false
   } finally {
     submitting.value = false
@@ -278,6 +301,20 @@ async function deleteCat(id, type) {
   border-radius: 4px;
 }
 
+.btn-edit {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 4px;
+}
+
+.btn-edit:hover {
+  color: #2563eb;
+}
+
 .btn-del {
   background: transparent;
   border: none;
@@ -300,8 +337,8 @@ async function deleteCat(id, type) {
   border: none;
 }
 
-.btn-primary { background: #2563eb; color: #ffffff; }
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.btn-primary:hover { background: #dbeafe; border-color: #93c5fd; color: #2563eb; }
 .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 .btn-secondary:hover { background: #e2e8f0; }
 

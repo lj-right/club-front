@@ -5,7 +5,7 @@
         <h2 class="page-title">角色管理</h2>
       </div>
       <div class="header-actions">
-        <button class="btn btn-primary" @click="showAddModal = true">
+        <button class="btn btn-primary" @click="openCreateModal">
           新增角色
         </button>
       </div>
@@ -19,7 +19,11 @@
             <span class="role-title">{{ role.roleName }}</span>
             <code class="role-key">{{ role.roleKey }}</code>
           </div>
-          <span class="badge-users">{{ role.userCount || 1 }} 位成员</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="badge-users">{{ role.userCount || 1 }} 位成员</span>
+            <button v-if="role.roleKey !== 'super_user'" class="btn-role-action" title="编辑角色" @click="openEditModal(role)">✎</button>
+            <button v-if="role.roleKey !== 'super_user'" class="btn-role-action danger" title="删除角色" @click="deleteRole(role.id, role.roleName)">✕</button>
+          </div>
         </div>
 
         <p class="role-desc">{{ role.description }}</p>
@@ -114,11 +118,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
 
 const adminStore = useAdminStore()
 const showAddModal = ref(false)
+const editingRoleId = ref(null)
+
+onMounted(async () => {
+  await adminStore.fetchUserPermissions('admin')
+})
 
 const newRole = ref({
   roleName: '',
@@ -126,6 +135,34 @@ const newRole = ref({
   description: '',
   permissions: ['subject:query', 'subject:detail']
 })
+
+function openCreateModal() {
+  editingRoleId.value = null
+  newRole.value = {
+    roleName: '',
+    roleKey: '',
+    description: '',
+    permissions: ['subject:query', 'subject:detail']
+  }
+  showAddModal.value = true
+}
+
+function openEditModal(role) {
+  editingRoleId.value = role.id
+  newRole.value = {
+    roleName: role.roleName,
+    roleKey: role.roleKey,
+    description: role.description || '',
+    permissions: role.permissions || ['subject:query']
+  }
+  showAddModal.value = true
+}
+
+async function deleteRole(id, name) {
+  if (confirm(`确定要删除系统角色 [${name}] 吗？`)) {
+    await adminStore.removeRole(id)
+  }
+}
 
 function getRouteForPerm(key) {
   if (key === 'subject:add') return '/subject/subject/add'
@@ -152,7 +189,15 @@ async function submitNewRole() {
     return
   }
 
-  await adminStore.createRole(newRole.value)
+  if (editingRoleId.value) {
+    await adminStore.editRole({
+      id: editingRoleId.value,
+      roleName: newRole.value.roleName.trim(),
+      roleKey: newRole.value.roleKey.trim()
+    })
+  } else {
+    await adminStore.createRole(newRole.value)
+  }
   showAddModal.value = false
 }
 </script>
@@ -235,6 +280,23 @@ async function submitNewRole() {
   padding: 2px 8px;
   border-radius: 10px;
   font-weight: 600;
+}
+
+.btn-role-action {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.btn-role-action:hover {
+  color: #2563eb;
+}
+
+.btn-role-action.danger:hover {
+  color: #ef4444;
 }
 
 .role-desc {
@@ -342,8 +404,8 @@ async function submitNewRole() {
   border: none;
 }
 
-.btn-primary { background: #2563eb; color: #ffffff; }
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.btn-primary:hover { background: #dbeafe; border-color: #93c5fd; color: #2563eb; }
 .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 .btn-secondary:hover { background: #e2e8f0; }
 

@@ -264,24 +264,27 @@ onMounted(async () => {
 .opt-title {
   font-size: 13px;
   font-weight: 600;
-  color: #1e3a8a;
+  color: #2563eb;
   margin-bottom: 10px;
 }
 
 .btn-gate-primary {
   width: 100%;
   padding: 9px 16px;
-  background: #2563eb;
-  color: #ffffff;
-  border: none;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .btn-gate-primary:hover {
-  background: #1d4ed8;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #2563eb;
 }
 
 .divider-text {
@@ -386,9 +389,10 @@ onMounted(async () => {
 }
 
 .nav-menu-item.active {
-  color: #ffffff;
-  background: #2563eb;
+  color: #60a5fa;
+  background: rgba(37, 99, 235, 0.2);
   font-weight: 600;
+  border-left: 3px solid #60a5fa;
 }
 
 .sidebar-footer {

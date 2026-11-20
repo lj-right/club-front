@@ -364,11 +364,14 @@ const maskedToken = computed(() => {
 }
 
 .btn-primary {
-  background: #2563eb;
-  color: #ffffff;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
 }
 
 .btn-primary:hover {
-  background: #1d4ed8;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #2563eb;
 }
 </style>

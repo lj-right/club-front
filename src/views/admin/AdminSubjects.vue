@@ -35,13 +35,17 @@
           </select>
         </div>
 
-        <div class="filter-item search-box">
+        <div class="filter-item search-box" style="display: flex; gap: 6px;">
           <input
             v-model="adminStore.subjectFilter.keyWord"
             type="text"
-            placeholder="搜索题目标题、考点关键词..."
+            placeholder="搜索题目标题、考点关键词 (回车检索)..."
             class="admin-input"
+            @keyup.enter="handleBackendSearch"
           />
+          <button class="btn btn-secondary" @click="handleBackendSearch">
+            搜索
+          </button>
         </div>
 
         <button class="btn btn-secondary" @click="resetFilters">
@@ -322,11 +326,17 @@ const totalPages = computed(() => {
   return Math.ceil(adminStore.activeSubjectList.length / pageSize) || 1
 })
 
+async function handleBackendSearch() {
+  currentPage.value = 1
+  await adminStore.fetchSubjects(adminStore.subjectFilter.keyWord)
+}
+
 function resetFilters() {
   adminStore.subjectFilter.type = 'all'
   adminStore.subjectFilter.difficulty = 'all'
   adminStore.subjectFilter.keyWord = ''
   currentPage.value = 1
+  adminStore.fetchSubjects('')
 }
 
 function truncate(str, len) {
@@ -607,7 +617,7 @@ function deleteItem(id) {
   font-weight: 500;
 }
 
-.type-radio { background: #eff6ff; color: #1d4ed8; }
+.type-radio { background: #eff6ff; color: #2563eb; }
 .type-multi { background: #faf5ff; color: #7e22ce; }
 .type-judge { background: #fef3c7; color: #b45309; }
 .type-brief { background: #f0fdf4; color: #15803d; }
@@ -899,8 +909,8 @@ function deleteItem(id) {
   border: none;
 }
 
-.btn-primary { background: #2563eb; color: #ffffff; }
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.btn-primary:hover { background: #dbeafe; border-color: #93c5fd; color: #2563eb; }
 .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 .btn-secondary:hover { background: #e2e8f0; }
 

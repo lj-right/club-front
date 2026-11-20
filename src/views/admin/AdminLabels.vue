@@ -24,7 +24,10 @@
             <span class="lbl-name">{{ lbl.name }}</span>
             <span class="lbl-cat">{{ lbl.categoryName || 'Java基础' }}</span>
           </div>
-          <button class="lbl-del" @click="deleteLabel(lbl.id)">✕</button>
+          <div class="lbl-actions">
+            <button class="lbl-edit" @click="openEditModal(lbl)">✎</button>
+            <button class="lbl-del" @click="deleteLabel(lbl.id)">✕</button>
+          </div>
         </div>
       </div>
     </div>
@@ -33,7 +36,7 @@
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">新增考点标签</h3>
+          <h3 class="modal-title">{{ editingId ? '编辑考点标签' : '新增考点标签' }}</h3>
           <button class="modal-close" @click="showModal = false">✕</button>
         </div>
         <div class="modal-body">
@@ -80,6 +83,7 @@ const adminStore = useAdminStore()
 
 const showModal = ref(false)
 const submitting = ref(false)
+const editingId = ref(null)
 
 const labelForm = ref({
   name: '',
@@ -88,10 +92,21 @@ const labelForm = ref({
 })
 
 function openModal() {
+  editingId.value = null
   labelForm.value = {
     name: '',
     categoryId: adminStore.subCategories[0]?.id || 101,
     sortNum: 1
+  }
+  showModal.value = true
+}
+
+function openEditModal(lbl) {
+  editingId.value = lbl.id
+  labelForm.value = {
+    name: lbl.name,
+    categoryId: lbl.categoryId || adminStore.subCategories[0]?.id || 101,
+    sortNum: lbl.sortNum || 1
   }
   showModal.value = true
 }
@@ -104,7 +119,16 @@ async function submitLabel() {
 
   submitting.value = true
   try {
-    await adminStore.createLabel(labelForm.value)
+    if (editingId.value) {
+      await adminStore.editLabel({
+        id: editingId.value,
+        name: labelForm.value.name.trim(),
+        categoryId: labelForm.value.categoryId,
+        sortNum: labelForm.value.sortNum
+      })
+    } else {
+      await adminStore.createLabel(labelForm.value)
+    }
     showModal.value = false
   } finally {
     submitting.value = false
@@ -212,6 +236,25 @@ async function deleteLabel(id) {
   color: #64748b;
 }
 
+.lbl-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lbl-edit {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.lbl-edit:hover {
+  color: #2563eb;
+}
+
 .lbl-del {
   background: transparent;
   border: none;
@@ -234,8 +277,8 @@ async function deleteLabel(id) {
   border: none;
 }
 
-.btn-primary { background: #2563eb; color: #ffffff; }
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.btn-primary:hover { background: #dbeafe; border-color: #93c5fd; color: #2563eb; }
 .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 .btn-secondary:hover { background: #e2e8f0; }
 

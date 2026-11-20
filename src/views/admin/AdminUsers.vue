@@ -49,14 +49,22 @@
               </td>
               <td class="cell-time">{{ u.createdTime }}</td>
               <td style="text-align: right;">
-                <button
-                  v-if="u.userName !== 'admin'"
-                  class="btn-action"
-                  :class="{ danger: u.status === 0 }"
-                  @click="toggleStatus(u.id, u.userName, u.status)"
-                >
-                  {{ u.status === 0 ? '冻结账号' : '解冻恢复' }}
-                </button>
+                <template v-if="u.userName !== 'admin'">
+                  <button
+                    class="btn-action"
+                    :class="{ danger: u.status === 0 }"
+                    @click="toggleStatus(u.id, u.userName, u.status)"
+                  >
+                    {{ u.status === 0 ? '冻结' : '解冻' }}
+                  </button>
+                  <button
+                    class="btn-action danger"
+                    style="margin-left: 6px;"
+                    @click="handleDeleteUser(u.id, u.userName)"
+                  >
+                    删除
+                  </button>
+                </template>
                 <span v-else class="text-disabled">保护账号</span>
               </td>
             </tr>
@@ -76,6 +84,12 @@ async function toggleStatus(userId, userName, currentStatus) {
   const actionText = currentStatus === 0 ? '冻结' : '解冻'
   if (confirm(`确定要${actionText}用户 [${userName}] 的账号吗？`)) {
     await adminStore.toggleUserStatus(userId)
+  }
+}
+
+async function handleDeleteUser(userId, userName) {
+  if (confirm(`确定要永久注销/删除用户 [${userName}] 吗？`)) {
+    await adminStore.removeUser(userId)
   }
 }
 </script>

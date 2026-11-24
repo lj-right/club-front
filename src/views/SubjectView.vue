@@ -42,6 +42,28 @@
       </div>
     </div>
 
+    <!-- 三级分类：知识点标签 (Knowledge Point Labels) - 胶囊 Pill 药丸式过滤标签 (无图标规范) -->
+    <div v-if="currentLabels.length > 0" class="third-label-bar">
+      <div class="label-pills-list">
+        <button
+          class="label-pill"
+          :class="{ active: subjectStore.selectedLabels.length === 0 }"
+          @click="subjectStore.clearLabels"
+        >
+          全部考点
+        </button>
+        <button
+          v-for="lbl in currentLabels"
+          :key="lbl"
+          class="label-pill"
+          :class="{ active: subjectStore.selectedLabels.includes(lbl) }"
+          @click="subjectStore.toggleLabel(lbl)"
+        >
+          {{ lbl }}
+        </button>
+      </div>
+    </div>
+
     <!-- 工具与条件过滤栏 -->
     <div class="filter-tool-bar">
       <div class="filter-left">
@@ -109,6 +131,18 @@
           </label>
         </div>
       </div>
+
+      <!-- 题库全库快速搜索入口 (打破单标签限制，任意搜并反向定位) -->
+      <div class="filter-right">
+        <div class="subject-quick-search" @click="subjectStore.openSearchModal" title="全库任意检索题目，直接定位至题库位置">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span class="search-text">全库检索 (随便搜，定位至题目)...</span>
+          <span class="search-kbd">/</span>
+        </div>
+      </div>
     </div>
 
     <!-- 题目列表与侧栏主体 -->
@@ -122,9 +156,16 @@
         <div
           v-for="q in subjectStore.filteredQuestions"
           :key="q.id"
+          :id="'subject-q-' + q.id"
           class="subject-q-card"
+          :class="{ 'target-highlighted': subjectStore.highlightedSubjectId === q.id }"
         >
-          <h3 class="q-title">{{ q.title }}</h3>
+          <div class="q-title-row">
+            <h3 class="q-title">{{ q.title }}</h3>
+            <span v-if="subjectStore.highlightedSubjectId === q.id" class="locate-target-badge">
+              定位目标题目
+            </span>
+          </div>
 
           <!-- 背诵模式内容控制（核心答案摘要）就地展开 -->
           <div v-if="isAnswerShown(q.id) && (q.summary || q.answer)" class="q-answer-preview">
@@ -264,8 +305,25 @@ function selectPrimaryRole(id) {
   subjectStore.selectPrimary(id)
 }
 
+// 三级分类知识点考点列表
+const currentLabels = computed(() => {
+  const activeSub = subjectStore.activeSubCategory
+  if (!activeSub || !Array.isArray(activeSub.labels)) return []
+  return activeSub.labels
+})
+
 // 答案展开控制
 const revealedQuestions = ref(new Set())
+
+watch(
+  () => subjectStore.highlightedSubjectId,
+  (newId) => {
+    if (newId) {
+      revealedQuestions.value.add(newId)
+    }
+  },
+  { immediate: true }
+)
 
 watch(() => subjectStore.reciteMode, () => {
   revealedQuestions.value = new Set()
@@ -525,6 +583,70 @@ function handleContributorAvatarError(e) {
   color: var(--primary);
 }
 
+/* 三级分类：知识点标签 (Knowledge Point Labels) - 胶囊 Pill 药丸式过滤标签 */
+.third-label-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  margin-bottom: 13px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.label-pills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.label-pill {
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle, #f8fafc);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.label-pill:hover {
+  border-color: var(--primary-border, #93c5fd);
+  color: var(--primary, #1677ff);
+  background: var(--primary-light, #eff6ff);
+}
+
+.label-pill.active {
+  background: var(--primary, #1677ff);
+  border-color: var(--primary, #1677ff);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(22, 119, 255, 0.25);
+}
+
+:global(html.dark) .label-pill {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+:global(html.dark) .label-pill:hover {
+  background: rgba(22, 119, 255, 0.15);
+  border-color: var(--primary);
+  color: #38bdf8;
+}
+
+:global(html.dark) .label-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+}
+
 /* 工具与过滤操作栏 */
 .filter-tool-bar {
   display: flex;
@@ -600,6 +722,72 @@ function handleContributorAvatarError(e) {
   font-size: 12px;
   color: var(--text-secondary);
   font-weight: 500;
+}
+
+/* 题库全库快速检索 */
+.filter-right {
+  display: flex;
+  align-items: center;
+}
+.subject-quick-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-subtle, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+  padding: 5px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+.subject-quick-search:hover {
+  background: var(--bg-hover, #e2e8f0);
+  border-color: var(--primary, #1677ff);
+  color: var(--primary, #1677ff);
+}
+.search-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.subject-quick-search:hover .search-text {
+  color: var(--primary, #1677ff);
+}
+.search-kbd {
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.q-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.q-title-row .q-title {
+  margin-bottom: 0;
+}
+.locate-target-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #e6f4ff;
+  border: 1px solid #91caff;
+  color: #1677ff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+:global(html.dark) .locate-target-badge {
+  background: rgba(22, 119, 255, 0.2);
+  border-color: #1677ff;
+  color: #69b1ff;
 }
 
 /* 分页控制器（每页不超过5条） */
@@ -737,6 +925,33 @@ function handleContributorAvatarError(e) {
   border-color: var(--primary-border);
   box-shadow: var(--shadow-sm);
   transform: none !important;
+}
+
+/* 搜索结果在题库分类下定位高亮与聚焦脉冲 */
+.subject-q-card.target-highlighted {
+  border-color: var(--primary, #1677ff) !important;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.22), 0 8px 20px rgba(22, 119, 255, 0.12) !important;
+  animation: locatePulse 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes locatePulse {
+  0% {
+    transform: scale(1.012);
+    box-shadow: 0 0 0 5px rgba(22, 119, 255, 0.35), 0 10px 24px rgba(22, 119, 255, 0.18);
+  }
+  50% {
+    transform: scale(1.004);
+    box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.2), 0 6px 16px rgba(22, 119, 255, 0.1);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+:global(html.dark) .subject-q-card.target-highlighted {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25), 0 8px 20px rgba(0, 0, 0, 0.35) !important;
 }
 .q-title {
   font-size: 15px;

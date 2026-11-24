@@ -11,6 +11,23 @@ export function analyseResume(url, engine = 'JI_CHI') {
   })
 }
 
+/**
+ * 文件直传解析简历关键词 (支持直接拖拽上传，无需依赖 MinIO)
+ */
+export function analyseResumeFile(file, engine = 'JI_CHI') {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('engine', engine)
+  return request({
+    url: '/interview/interview/analyse-file',
+    method: 'POST',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
 export function startInterview(questionList, engine = 'JI_CHI') {
   return request({
     url: '/interview/interview/start',

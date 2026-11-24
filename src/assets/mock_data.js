@@ -745,7 +745,7 @@ export const CIRCLE_MOMENTS_DATA = [
       {
         id: 1,
         author: "随风",
-        avatar: "http://127.0.0.1:9005/user/avatar/avatar_suifeng.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/suifeng.png",
         badge: "资深架构师",
         channel: "interview",
         channelName: "职场面经",
@@ -758,14 +758,14 @@ export const CIRCLE_MOMENTS_DATA = [
         likes: 124,
         isLiked: false,
         comments: [
-          { user: "CodeArt", avatar: "http://127.0.0.1:9005/user/avatar/avatar_codeart.png", text: "字节三面确实偏实战！感谢随风大佬的题库，刚才刚好刷到这题！" },
-          { user: "小明学Java", avatar: "http://127.0.0.1:9005/user/avatar/avatar_xiaoming.png", text: "请问 Redisson 的 Watchdog 机制考官有追问吗？" }
+          { user: "CodeArt", avatar: "http://127.0.0.1:9005/user/avatar/default_avatar.jpg", text: "字节三面确实偏实战！感谢随风大佬的题库，刚才刚好刷到这题！" },
+          { user: "小明学Java", avatar: "http://127.0.0.1:9005/user/avatar/default_avatar.jpg", text: "请问 Redisson 的 Watchdog 机制考官有追问吗？" }
         ]
       },
       {
         id: 2,
         author: "架构小哥",
-        avatar: "http://127.0.0.1:9005/user/avatar/avatar_jiagou.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/default_avatar.jpg",
         badge: "中间件研发",
         channel: "architecture",
         channelName: "架构心得",
@@ -774,13 +774,13 @@ export const CIRCLE_MOMENTS_DATA = [
         likes: 89,
         isLiked: false,
         comments: [
-          { user: "极客老李", avatar: "http://127.0.0.1:9005/user/avatar/avatar_laoli.png", text: "非常赞同！还有全局锁超时的重试次数也需要结合业务调优。" }
+          { user: "极客老李", avatar: "http://127.0.0.1:9005/user/avatar/default_avatar.jpg", text: "非常赞同！还有全局锁超时的重试次数也需要结合业务调优。" }
         ]
       },
       {
         id: 3,
         author: "前端小菜鸟",
-        avatar: "http://127.0.0.1:9005/user/avatar/avatar_cainiao.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/default_avatar.jpg",
         badge: "全栈开发者",
         channel: "tech",
         channelName: "技术交流",
@@ -793,7 +793,7 @@ export const CIRCLE_MOMENTS_DATA = [
       {
         id: 4,
         author: "算法大牛",
-        avatar: "http://127.0.0.1:9005/user/avatar/avatar_daniu.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/default_avatar.jpg",
         badge: "ACM金牌",
         channel: "interview",
         channelName: "职场面经",
@@ -802,13 +802,13 @@ export const CIRCLE_MOMENTS_DATA = [
         likes: 102,
         isLiked: false,
         comments: [
-          { user: "小明学Java", avatar: "http://127.0.0.1:9005/user/avatar/avatar_xiaoming.png", text: "收下这份面经秘籍！LRU 确实是高频考点！" }
+          { user: "小明学Java", avatar: "http://127.0.0.1:9005/user/avatar/default_avatar.jpg", text: "收下这份面经秘籍！LRU 确实是高频考点！" }
         ]
       },
       {
         id: 5,
         author: "测试喵",
-        avatar: "http://127.0.0.1:9005/user/avatar/avatar_miao.png",
+        avatar: "http://127.0.0.1:9005/user/avatar/default_avatar.jpg",
         badge: "测试专家",
         channel: "tech",
         channelName: "技术交流",

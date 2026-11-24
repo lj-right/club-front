@@ -85,6 +85,17 @@ export function addSubject(data) {
 }
 
 /**
+ * 自动录取题目接口 (仅系统管理员操作)
+ */
+export function autoImportSubjects(data = {}) {
+  return request({
+    url: '/subject/subject/admin/autoImport',
+    method: 'POST',
+    data
+  })
+}
+
+/**
  * 分类管理接口
  */
 export function queryPrimaryCategory(categoryType = 1) {

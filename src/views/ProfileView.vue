@@ -4,7 +4,7 @@
     <div class="profile-header-card">
       <div class="profile-main-info">
         <div class="profile-avatar-wrap" @click="triggerAvatarUpload" title="点击上传/更换头像" style="cursor: pointer; position: relative;">
-          <img :src="authStore.avatar" class="profile-avatar" />
+          <img :src="authStore.avatar" class="profile-avatar" @error="handleAvatarError" />
           <div class="avatar-hover-tip">更换头像</div>
           <input
             ref="avatarInputRef"
@@ -212,6 +212,14 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSubjectStore } from '@/stores/subject'
 import { usePracticeStore } from '@/stores/practice'
+import defaultAvatarImg from '@/assets/default_avatar.jpg'
+
+function handleAvatarError(e) {
+  if (e?.target) {
+    e.target.onerror = null
+    e.target.src = defaultAvatarImg
+  }
+}
 
 const authStore = useAuthStore()
 const subjectStore = useSubjectStore()

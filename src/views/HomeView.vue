@@ -63,7 +63,7 @@
         </div>
       </div>
 
-      <!-- 右侧：热门题榜与圈子热议 -->
+      <!-- 右侧：热门题榜 -->
       <div class="home-sidebar">
         <!-- 热门题目排行榜 TOP 5 -->
         <div class="sidebar-card">
@@ -86,26 +86,6 @@
             </div>
           </div>
         </div>
-
-        <!-- 社区热议速报 -->
-        <div class="sidebar-card">
-          <h3 class="sidebar-title">圈子热议交流</h3>
-          <div class="community-mini-list">
-            <div
-              v-for="m in circleStore.moments.slice(0, 3)"
-              :key="m.id"
-              class="mini-moment-item"
-              @click="$router.push('/circle')"
-            >
-              <div class="mini-author">
-                <img :src="m.avatar" class="mini-avatar" />
-                <span class="mini-name">{{ m.author }}</span>
-                <span class="mini-channel">#{{ m.channelName }}</span>
-              </div>
-              <p class="mini-content">{{ m.content }}</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -115,12 +95,10 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubjectStore } from '@/stores/subject'
-import { useCircleStore } from '@/stores/circle'
 import { formatAnswer } from '@/utils/format'
 
 const router = useRouter()
 const subjectStore = useSubjectStore()
-const circleStore = useCircleStore()
 
 const revealedQuestions = ref(new Set())
 
@@ -545,48 +523,5 @@ function handleHotClick(hot) {
   font-size: 12px;
   color: var(--primary);
   cursor: pointer;
-}
-.community-mini-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.mini-moment-item {
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 10px;
-  cursor: pointer;
-}
-.mini-moment-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-.mini-author {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-.mini-avatar {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-}
-.mini-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-main);
-}
-.mini-channel {
-  font-size: 11px;
-  color: var(--primary);
-}
-.mini-content {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 </style>

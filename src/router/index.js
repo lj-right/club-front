@@ -15,55 +15,55 @@ const routes = [
     path: '/home',
     name: 'Home',
     component: HomeView,
-    meta: { title: '首页 - 随风 Club' }
+    meta: { title: '首页 - 烤面筋' }
   },
   {
     path: '/subject',
     name: 'Subject',
     component: SubjectView,
-    meta: { title: '题库 - 随风 Club' }
+    meta: { title: '题库 - 烤面筋' }
   },
   {
     path: '/practice',
     name: 'Practice',
     component: PracticeView,
-    meta: { title: '在线练习 - 随风 Club' }
+    meta: { title: '在线练习 - 烤面筋' }
   },
   {
     path: '/interview',
     name: 'Interview',
     component: InterviewView,
-    meta: { title: 'AI 面试 - 随风 Club' }
+    meta: { title: 'AI 面试 - 烤面筋' }
   },
   {
     path: '/circle',
     name: 'Circle',
     component: CircleView,
-    meta: { title: '交流论坛 - 随风 Club' }
+    meta: { title: '交流论坛 - 烤面筋' }
   },
   {
     path: '/circle/detail/:id',
     name: 'CircleDetail',
     component: () => import('@/views/CircleDetailView.vue'),
-    meta: { title: '动态详情 - 随风 Club' }
+    meta: { title: '动态详情 - 烤面筋' }
   },
   {
     path: '/profile',
     name: 'Profile',
     component: ProfileView,
-    meta: { title: '个人中心 - 随风 Club' }
+    meta: { title: '个人中心 - 烤面筋' }
   },
   {
     path: '/oauth/callback/:platform',
     name: 'OAuthCallback',
     component: () => import('@/views/oauth/CallbackView.vue'),
-    meta: { title: '第三方授权登录 - 随风 Club' }
+    meta: { title: '第三方授权登录 - 烤面筋' }
   },
   {
     path: '/base',
     name: 'AdminBase',
     component: () => import('@/views/admin/AdminLayout.vue'),
-    meta: { title: '随风 Club · 后台管理系统', requiresAdmin: true }
+    meta: { title: '烤面筋 · 后台管理系统', requiresAdmin: true }
   }
 ]
 

@@ -10,6 +10,7 @@ export default defineConfig({
     }
   },
   server: {
+    host: '0.0.0.0',
     port: 3000,
     open: false,
     proxy: {
@@ -32,6 +33,11 @@ export default defineConfig({
         target: 'http://localhost:3015',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/interview/, '')
+      },
+      '/api/ai': {
+        target: 'http://localhost:8012',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/api/oss': {
         target: 'http://localhost:4000',

@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { doLogin, getUserInfo, logOut, updateUserInfo, isLogin, doOAuthLogin } from '@/api/auth'
 import { uploadFile } from '@/api/oss'
+import defaultAvatarImg from '@/assets/default_avatar.jpg'
 
-const DEFAULT_AVATAR = 'http://127.0.0.1:9005/user/avatar/default_avatar.jpg'
+const DEFAULT_AVATAR = defaultAvatarImg
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -17,7 +18,7 @@ export const useAuthStore = defineStore('auth', {
     avatar: (state) => {
       const a = state.userInfo?.avatar
       if (a) {
-        if (a.includes('oss.sfclub.com')) {
+        if (a.includes('oss.sfclub.com') || a.includes('default_avatar.jpg')) {
           return DEFAULT_AVATAR
         }
         return a

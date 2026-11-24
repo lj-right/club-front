@@ -5,6 +5,15 @@
         <h2 class="page-title">题目管理</h2>
       </div>
       <div class="header-actions">
+        <button
+          v-if="isAdmin"
+          class="btn btn-secondary"
+          :disabled="isImporting"
+          style="margin-right: 8px;"
+          @click="openAutoImportModal"
+        >
+          {{ isImporting ? '录取执行中...' : '自动录取考题' }}
+        </button>
         <button class="btn btn-primary" @click="openCreateModal">
           录入新考题
         </button>
@@ -287,18 +296,193 @@
         </div>
       </div>
     </div>
+
+    <!-- 自动录取题目弹窗 (仅管理员) -->
+    <div v-if="isImportModalOpen" class="modal-overlay" @click.self="closeImportModal">
+      <div class="modal-card import-modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">自动录取考题</h3>
+          <button class="modal-close" @click="closeImportModal">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="import-notice-box">
+            <div class="notice-title">自动录取与持久化说明</div>
+            <div class="notice-desc">
+              本功能仅限系统管理员操作。系统将自动提取高频真实面试真题，完成题干规范化清洗、智能等级判定（简单/中等/困难）、三级技术分类与知识点标签映射，并严格基于数据库已有题目进行全局去重录入与持久化。
+            </div>
+          </div>
+
+          <!-- 范围选择 -->
+          <div v-if="!importResult" class="form-group" style="margin-top: 16px;">
+            <label class="form-label">技术领域范围</label>
+            <select v-model="importForm.source" class="admin-select" :disabled="isImporting">
+              <option value="ALL">全栈技术考点 (后端 / 前端 / AI大模型 / 算法)</option>
+              <option value="BACKEND">后端核心架构 (Java / JVM / Spring / MySQL / Redis / JUC / MQ)</option>
+              <option value="FRONTEND">Web 前端生态 (Vue / React / JS / TS / 工程化)</option>
+              <option value="AI">人工智能与大模型 (LLM / RAG / 微调 / Agent)</option>
+              <option value="ALGORITHM">算法与数据结构 (经典高频题)</option>
+            </select>
+          </div>
+
+          <div v-if="!importResult" class="form-group">
+            <label class="form-label">录取数量上限</label>
+            <select v-model="importForm.limit" class="admin-select" :disabled="isImporting">
+              <option :value="20">20 道</option>
+              <option :value="50">50 道</option>
+              <option :value="100">100 道 (推荐)</option>
+              <option :value="500">500 道</option>
+            </select>
+          </div>
+
+          <!-- 执行中状态 -->
+          <div v-if="isImporting" class="import-running-box">
+            <div class="running-spinner"></div>
+            <div class="running-text">正在检索、清洗并分批持久化考题至数据库...</div>
+            <div class="running-tip">请稍候，入库完成后将自动同步至搜索引擎索引。</div>
+          </div>
+
+          <!-- 错误提示 -->
+          <div v-if="importError" class="import-error-banner">
+            {{ importError }}
+          </div>
+
+          <!-- 导入结果展示 -->
+          <div v-if="importResult" class="import-result-card">
+            <div class="result-status-title">自动录取任务执行完毕</div>
+            <div class="result-summary-text">{{ importResult.summaryMessage }}</div>
+
+            <div class="result-stat-grid">
+              <div class="stat-box">
+                <span class="stat-num text-success">{{ importResult.importedCount }}</span>
+                <span class="stat-label">本次新增入库</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-num text-muted">{{ importResult.duplicateCount }}</span>
+                <span class="stat-label">去重跳过题数</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-num">{{ importResult.categoriesCount }}</span>
+                <span class="stat-label">覆盖技能分类</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-num">{{ importResult.labelsCount }}</span>
+                <span class="stat-label">覆盖考点标签</span>
+              </div>
+            </div>
+
+            <div v-if="importResult.sampleTitles && importResult.sampleTitles.length > 0" class="sample-section">
+              <div class="sample-title">新录入题目样本预览:</div>
+              <ul class="sample-list">
+                <li v-for="(sample, sIdx) in importResult.sampleTitles" :key="sIdx">
+                  {{ sIdx + 1 }}. {{ sample }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button v-if="!importResult" class="btn btn-secondary" :disabled="isImporting" @click="closeImportModal">
+            取消
+          </button>
+          <button
+            v-if="!importResult"
+            class="btn btn-primary"
+            :disabled="isImporting"
+            @click="handleStartAutoImport"
+          >
+            {{ isImporting ? '正在录取中...' : '开始自动录取' }}
+          </button>
+          <button
+            v-if="importResult"
+            class="btn btn-primary"
+            @click="finishAndRefresh"
+          >
+            完成并刷新题库
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useAdminStore } from '@/stores/admin'
+import { autoImportSubjects } from '@/api/admin'
 
 const adminStore = useAdminStore()
 
 const isModalOpen = ref(false)
 const submitting = ref(false)
 const detailTarget = ref(null)
+
+// 自动录取相关状态 (仅管理员操作)
+const isImportModalOpen = ref(false)
+const isImporting = ref(false)
+const importError = ref('')
+const importResult = ref(null)
+
+const importForm = ref({
+  source: 'ALL',
+  limit: 100,
+  autoSyncEs: true
+})
+
+const isAdmin = computed(() => {
+  const role = adminStore.adminUser?.role
+  const userName = adminStore.adminUser?.userName
+  return role === 'super_user' || role === 'admin' || userName === 'admin'
+})
+
+function openAutoImportModal() {
+  if (!isAdmin.value) {
+    alert('无操作权限：仅系统管理员允许执行自动录取题目操作。')
+    return
+  }
+  importResult.value = null
+  importError.value = ''
+  isImportModalOpen.value = true
+}
+
+function closeImportModal() {
+  if (isImporting.value) return
+  isImportModalOpen.value = false
+  importResult.value = null
+  importError.value = ''
+}
+
+async function handleStartAutoImport() {
+  if (!isAdmin.value) {
+    importError.value = '无操作权限：仅系统管理员允许执行自动录取题目操作。'
+    return
+  }
+  isImporting.value = true
+  importError.value = ''
+  try {
+    const res = await autoImportSubjects({
+      source: importForm.value.source,
+      limit: importForm.value.limit,
+      autoSyncEs: importForm.value.autoSyncEs
+    })
+    if (res && res.success && res.data) {
+      importResult.value = res.data
+    } else {
+      importError.value = (res && res.message) || '自动录取题目失败，请检查网络或后端微服务状态'
+    }
+  } catch (err) {
+    importError.value = err.message || '请求执行异常，仅管理员具备此接口调用权限'
+  } finally {
+    isImporting.value = false
+  }
+}
+
+async function finishAndRefresh() {
+  closeImportModal()
+  currentPage.value = 1
+  await adminStore.fetchSubjects('')
+}
 
 const currentPage = ref(1)
 const pageSize = 8
@@ -922,5 +1106,155 @@ function deleteItem(id) {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+
+/* 自动录取题目专用样式 - 严格无emoji */
+.import-modal-card {
+  max-width: 620px;
+}
+
+.import-notice-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.notice-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.notice-desc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.import-running-box {
+  margin-top: 18px;
+  padding: 24px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.running-spinner {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 10px;
+  border: 3px solid #bbf7d0;
+  border-top-color: #16a34a;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.running-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.running-tip {
+  font-size: 11px;
+  color: #166534;
+  margin-top: 4px;
+}
+
+.import-error-banner {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #dc2626;
+  line-height: 1.5;
+}
+
+.import-result-card {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.result-status-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.result-summary-text {
+  font-size: 12px;
+  color: #475569;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.result-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.stat-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-num {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stat-num.text-success {
+  color: #16a34a;
+}
+
+.stat-num.text-muted {
+  color: #94a3b8;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.sample-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.sample-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.sample-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.7;
 }
 </style>

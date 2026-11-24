@@ -67,7 +67,7 @@ export const usePracticeStore = defineStore('practice', {
     isExamActive: false,
     currentSetId: 1,
     practiceId: null,
-    examTitle: '随风 Club · 全真自适应专项在线考场',
+    examTitle: '烤面筋 · 全真自适应专项在线考场',
     examDuration: 45 * 60, // 45 minutes
     timerSeconds: 45 * 60,
     timerInterval: null,
@@ -289,7 +289,7 @@ export const usePracticeStore = defineStore('practice', {
         if (q.type === 4) {
           // 简答题/主观题：持久化文本内容至后端 practice_detail.answer_content
           answerText = typeof userAns === 'string' ? userAns.trim() : String(userAns || '')
-          answerContents = [1]
+          answerContents = []
         } else if (q.type === 2) {
           answerContents = Array.isArray(userAns) ? userAns : [userAns]
         } else if (typeof userAns === 'number') {
@@ -322,7 +322,7 @@ export const usePracticeStore = defineStore('practice', {
       if (curQ.type === 2) {
         let currentAnswers = Array.isArray(this.userAnswers[sId])
           ? [...this.userAnswers[sId]]
-          : (Array.isArray(this.userAnswers[this.currentIndex]) ? [...this.userAnswers[this.currentIndex]] : [])
+          : []
         const pos = currentAnswers.indexOf(optionVal)
         if (pos > -1) {
           currentAnswers.splice(pos, 1)
@@ -330,10 +330,8 @@ export const usePracticeStore = defineStore('practice', {
           currentAnswers.push(optionVal)
         }
         this.userAnswers[sId] = currentAnswers
-        this.userAnswers[this.currentIndex] = currentAnswers
       } else {
         this.userAnswers[sId] = optionVal
-        this.userAnswers[this.currentIndex] = optionVal
       }
 
       await this.saveCurrentAnswerToBackend()
@@ -440,9 +438,9 @@ export const usePracticeStore = defineStore('practice', {
                     detailData = {
                       ...(detailData || {}),
                       subjectName: info.subjectName || q.title,
-                      subjectParse: info.subjectParse || info.subjectAnswer,
-                      subjectAnswer: info.subjectAnswer || info.subjectParse,
-                      labelNames: info.labelNames
+                      subjectParse: info.subjectParse || info.subjectAnswer || q.subjectParse,
+                      subjectAnswer: info.subjectAnswer || info.subjectParse || q.subjectParse,
+                      labelNames: info.labelNames || q.detail?.labelNames
                     }
                   }
                 } catch (_) {}
@@ -450,13 +448,19 @@ export const usePracticeStore = defineStore('practice', {
 
               return {
                 ...q,
-                detail: detailData
+                detail: {
+                  ...(q.detail || {}),
+                  ...(detailData || {}),
+                  subjectParse: detailData?.subjectParse || detailData?.subjectAnswer || q.subjectParse || q.detail?.subjectParse,
+                  subjectAnswer: detailData?.subjectAnswer || detailData?.subjectParse || q.subjectAnswer || q.detail?.subjectAnswer
+                },
+                subjectParse: detailData?.subjectParse || detailData?.subjectAnswer || q.subjectParse || q.detail?.subjectParse
               }
             })
           )
         } catch (_) {}
       } else {
-        // Fallback without practiceId
+        // Fallback without practiceId (or custom exam)
         detailedSubjects = await Promise.all(
           this.questions.map(async (q) => {
             let detailData = null
@@ -466,15 +470,23 @@ export const usePracticeStore = defineStore('practice', {
                 const info = subInfoRes.data
                 detailData = {
                   subjectName: info.subjectName || q.title,
-                  subjectParse: info.subjectParse || info.subjectAnswer,
-                  subjectAnswer: info.subjectAnswer || info.subjectParse,
-                  labelNames: info.labelNames
+                  subjectParse: info.subjectParse || info.subjectAnswer || q.subjectParse,
+                  subjectAnswer: info.subjectAnswer || info.subjectParse || q.subjectParse,
+                  labelNames: info.labelNames || q.detail?.labelNames,
+                  optionList: info.optionList || q.options,
+                  correctAnswer: q.correctAnswer
                 }
               }
             } catch (_) {}
             return {
               ...q,
-              detail: detailData
+              detail: {
+                ...(q.detail || {}),
+                ...(detailData || {}),
+                subjectParse: detailData?.subjectParse || detailData?.subjectAnswer || q.subjectParse || q.detail?.subjectParse,
+                subjectAnswer: detailData?.subjectAnswer || detailData?.subjectParse || q.subjectAnswer || q.detail?.subjectAnswer
+              },
+              subjectParse: detailData?.subjectParse || detailData?.subjectAnswer || q.subjectParse || q.detail?.subjectParse
             }
           })
         )
@@ -483,29 +495,17 @@ export const usePracticeStore = defineStore('practice', {
       const totalQ = this.questions.length || 0
       const answeredQ = Object.keys(this.userAnswers).length
 
-      let correctCount = 0
-      if (realReport?.correctSubject) {
-        const parts = realReport.correctSubject.split('/')
-        correctCount = parseInt(parts[0], 10) || 0
-      } else if (scoreDetails.length > 0) {
-        correctCount = scoreDetails.filter((s) => s.isCorrect === 1).length
-      } else {
-        correctCount = 0
-      }
-
-      const score = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0
-
       const formattedDetailedSubjects = (detailedSubjects.length > 0 ? detailedSubjects : this.questions).map((q, idx) => {
         const sId = q.subjectId || q.id
         let cAns = (q.detail?.correctAnswer && q.detail.correctAnswer.length > 0) ? q.detail.correctAnswer : []
         if (cAns.length === 0 && q.options && q.options.length > 0) {
           cAns = q.options.filter((o) => o.isCorrect).map((o) => o.optionType)
         }
-        if (cAns.length === 0) {
-          cAns = [1]
+        if (cAns.length === 0 && q.correctAnswer && q.correctAnswer.length > 0) {
+          cAns = q.correctAnswer
         }
 
-        const rawUserAns = this.userAnswers[sId] !== undefined ? this.userAnswers[sId] : this.userAnswers[idx]
+        const rawUserAns = this.userAnswers[sId]
         const userText = q.detail?.answerContent || (rawUserAns !== undefined && rawUserAns !== null ? String(rawUserAns) : '')
         const respAns = q.detail?.respondAnswer && q.detail.respondAnswer.length > 0
           ? q.detail.respondAnswer
@@ -534,7 +534,7 @@ export const usePracticeStore = defineStore('practice', {
         if (q.detail?.optionList && q.detail.optionList.length > 0) {
           options = q.detail.optionList.map((opt) => ({
             optionType: opt.optionType,
-            content: opt.optionContent,
+            content: opt.optionContent || opt.content,
             isCorrect: opt.isCorrect === 1 || cAns.map(Number).includes(Number(opt.optionType))
           }))
         } else if (q.type === 3) {
@@ -549,7 +549,7 @@ export const usePracticeStore = defineStore('practice', {
           }))
         }
 
-        const parseText = q.detail?.subjectParse || q.detail?.subjectAnswer || q.subjectParse || '该考点深度解析与官方标准解答已沉淀至题库。'
+        const parseText = q.detail?.subjectParse || q.detail?.subjectAnswer || q.subjectParse || q.answer || '该考点标准解析已沉淀至题库。'
 
         return {
           ...q,
@@ -562,6 +562,18 @@ export const usePracticeStore = defineStore('practice', {
           subjectParse: parseText
         }
       })
+
+      let correctCount = 0
+      if (realReport?.correctSubject) {
+        const parts = realReport.correctSubject.split('/')
+        correctCount = parseInt(parts[0], 10) || 0
+      } else if (scoreDetails.length > 0) {
+        correctCount = scoreDetails.filter((s) => s.isCorrect === 1).length
+      } else {
+        correctCount = formattedDetailedSubjects.filter((s) => s.isCorrect).length
+      }
+
+      const score = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0
 
       // Construct dynamic radar and skill dimensions
       let reportSkills = []
@@ -616,9 +628,28 @@ export const usePracticeStore = defineStore('practice', {
       }
 
       // Persist to examHistory and sync with backend
-      try {
-        await this.loadExamHistory()
-      } catch (_) {}
+      if (String(this.practiceId).startsWith('custom_')) {
+        const customHistItem = {
+          id: this.practiceId,
+          practiceId: this.practiceId,
+          setId: this.currentSetId,
+          title: this.examTitle,
+          date: submitTime,
+          timeSpent: `${minSpent} 分钟`,
+          score,
+          total: totalQ,
+          correctCount,
+          wrongCount: Math.max(0, totalQ - correctCount),
+          completeStatus: 1,
+          report: this.examReport
+        }
+        this.examHistory = [customHistItem, ...this.examHistory.filter((h) => h.id !== this.practiceId)]
+        saveStoredHistory(this.examHistory)
+      } else {
+        try {
+          await this.loadExamHistory()
+        } catch (_) {}
+      }
 
       this.reportModalOpen = true
       await this.loadRankList()
@@ -721,6 +752,16 @@ export const usePracticeStore = defineStore('practice', {
       const practiceId = hist.practiceId || hist.id
       const setId = hist.setId
       if (!practiceId) return
+
+      if (String(practiceId).startsWith('custom_') || (hist.report && hist.report.detailedSubjects && hist.report.detailedSubjects.length > 0)) {
+        if (hist.report) {
+          this.examReport = hist.report
+          this.reviewFilter = filter
+          this.isReviewMode = true
+          this.reportModalOpen = false
+          return
+        }
+      }
 
       let reportData = null
       try {

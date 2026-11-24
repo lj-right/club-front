@@ -1,7 +1,7 @@
 <template>
   <div class="view-container">
     <!-- 模式一：错题复盘与逐题解析模式 (Review Mode) -->
-    <div v-if="practiceStore.isReviewMode && displayedReviewQuestions.length > 0" class="review-mode-layout">
+    <div v-if="practiceStore.isReviewMode" class="review-mode-layout">
       <!-- 头部导航与操作 -->
       <div class="review-top-bar">
         <div class="review-top-left">
@@ -446,7 +446,7 @@
               >
                 <div class="rank-left">
                   <span class="rank-badge" :class="'top-' + (idx + 1)">{{ idx + 1 }}</span>
-                  <img :src="r.avatar || defaultAvatar" class="rank-avatar" alt="avatar" />
+                  <img :src="r.avatar || defaultAvatar" class="rank-avatar" alt="avatar" @error="handleAvatarError" />
                   <span class="rank-name">{{ r.name || '随风学员' }}</span>
                 </div>
                 <div class="rank-count">完成 <strong>{{ r.count }}</strong> 场模考</div>
@@ -825,13 +825,20 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { usePracticeStore } from '@/stores/practice'
 import { addPractice } from '@/api/practice'
 import { getSubjectPage, queryPrimaryCategory, queryCategoryByPrimary, queryLabelByCategoryId } from '@/api/subject'
-import { PRIMARY_CATEGORIES, SUB_CATEGORIES, QUESTIONS_DATA } from '@/assets/mock_data'
 import { formatAnswer } from '@/utils/format'
 import TechIcon from '@/components/TechIcon.vue'
-import { matchCategoryQuestions, SPECIALIZED_QUESTIONS_POOL } from '@/utils/specializedQuestions'
+import { assembleRealExamQuestions } from '@/utils/databaseExamAssembler'
+import defaultAvatarImg from '@/assets/default_avatar.jpg'
 
 const practiceStore = usePracticeStore()
-const defaultAvatar = 'http://127.0.0.1:9005/user/avatar/default_avatar.jpg'
+const defaultAvatar = defaultAvatarImg
+
+function handleAvatarError(e) {
+  if (e?.target) {
+    e.target.onerror = null
+    e.target.src = defaultAvatarImg
+  }
+}
 
 const currentQ = computed(() => practiceStore.currentQuestion)
 
@@ -870,9 +877,7 @@ function getTypeBadgeClass(type) {
 function isOptionSelected(optType) {
   const curQ = practiceStore.currentQuestion
   const sId = curQ?.subjectId || curQ?.id
-  const ans = (sId && practiceStore.userAnswers[sId] !== undefined)
-    ? practiceStore.userAnswers[sId]
-    : practiceStore.userAnswers[practiceStore.currentIndex]
+  const ans = sId ? practiceStore.userAnswers[sId] : undefined
   if (Array.isArray(ans)) {
     return ans.includes(optType) || ans.includes(Number(optType))
   }
@@ -886,16 +891,13 @@ function handleSelect(optType) {
 const currentSubjectiveAnswer = computed(() => {
   const curQ = practiceStore.currentQuestion
   const sId = curQ?.subjectId || curQ?.id
-  const ans = (sId && practiceStore.userAnswers[sId] !== undefined)
-    ? practiceStore.userAnswers[sId]
-    : practiceStore.userAnswers[practiceStore.currentIndex]
+  const ans = sId ? practiceStore.userAnswers[sId] : ''
   return ans !== undefined && ans !== null ? String(ans) : ''
 })
 
 function handleSubjectiveInput(val) {
   const curQ = practiceStore.currentQuestion
   const sId = curQ?.subjectId || curQ?.id
-  practiceStore.userAnswers[practiceStore.currentIndex] = val
   if (sId) {
     practiceStore.userAnswers[sId] = val
   }
@@ -904,9 +906,7 @@ function handleSubjectiveInput(val) {
 function isQuestionAnswered(idx) {
   const q = practiceStore.questions[idx]
   const sId = q?.subjectId || q?.id
-  const ans = (sId && practiceStore.userAnswers[sId] !== undefined)
-    ? practiceStore.userAnswers[sId]
-    : practiceStore.userAnswers[idx]
+  const ans = sId ? practiceStore.userAnswers[sId] : undefined
   if (Array.isArray(ans)) return ans.length > 0
   return ans !== undefined && ans !== ''
 }
@@ -1251,68 +1251,44 @@ const customTotalQuestions = computed(() => {
 const isBuildingExam = ref(false)
 
 /**
- * 专项深度智能组卷引擎 (严格按照一级分类与二级分类从属匹配关系进行精准智能组卷)
- * 核心原则：严格匹配一级和二级分类从属，杜绝任何非目标技术分类题目混入
+ * 专项深度智能组卷引擎 (严格从真实数据库接口中精准抽取真实考题)
+ * 核心原则：严格匹配选中的分类与题型，每道题均携带真实的考题题干、标准答案与深度考点解析
  */
 async function generateSpecializedExam(selectedList, counts, examTitle) {
-  // 1. 严格按照选中的一级与二级分类匹配专业考题
-  const matchedList = matchCategoryQuestions(selectedList, counts)
-
-  const typeNames = { 1: '单选题', 2: '多选题', 3: '判断题', 4: '简答题' }
-  const perScore = matchedList.length > 0 ? Math.round(100 / matchedList.length) : 10
-
-  const formattedQuestions = matchedList.map((item, idx) => {
-    let options = []
-    if (item.type === 3) {
-      options = [
-        { optionType: 1, content: '正确 (True)' },
-        { optionType: 0, content: '错误 (False)' }
-      ]
-    } else if (Array.isArray(item.options) && item.options.length > 0) {
-      options = item.options.map((opt, oIdx) => ({
-        optionType: opt.optionType !== undefined ? opt.optionType : oIdx + 1,
-        content: opt.optionContent || opt.content || String(opt)
-      }))
-    } else if (item.type === 1 || item.type === 2) {
-      options = [
-        { optionType: 1, content: 'A. 核心架构原理与官方规范推荐实现' },
-        { optionType: 2, content: 'B. 常见异常机制与边界并发冲突处理' },
-        { optionType: 3, content: 'C. 传统低性能方案及非线程安全模式' },
-        { optionType: 4, content: 'D. 系统自动降级与全局兜底策略' }
-      ]
+  isBuildingExam.value = true
+  practiceStore.loadingExam = true
+  try {
+    const formattedQuestions = await assembleRealExamQuestions(selectedList, counts)
+    if (!formattedQuestions || formattedQuestions.length === 0) {
+      alert('未能在数据库中检索到所选分类的题目，请更换分类重试')
+      return
     }
 
-    return {
-      id: item.id || idx + 1,
-      subjectId: item.id || idx + 1,
-      type: item.type,
-      typeName: typeNames[item.type] || '单选题',
-      title: item.title,
-      options,
-      score: perScore,
-      detail: {
-        subjectName: item.title,
-        subjectAnswer: item.answer || item.parse,
-        subjectParse: item.parse || item.answer,
-        labelNames: [item.categoryName || '专项模拟']
-      }
-    }
-  })
+    const perScore = formattedQuestions.length > 0 ? Math.round(100 / formattedQuestions.length) : 10
+    formattedQuestions.forEach((q, idx) => {
+      q.index = idx
+      q.score = perScore
+    })
 
-  // 2. 同步注册考场
-  practiceStore.practiceId = Date.now()
-  practiceStore.currentSetId = selectedList[0]?.id || selectedList[0]?.categoryId || 1
-
-  // 3. 载入考场并启动
-  practiceStore.questions = formattedQuestions
-  practiceStore.currentIndex = 0
-  practiceStore.userAnswers = {}
-  practiceStore.flagged = {}
-  practiceStore.timerSeconds = (counts.duration || 45) * 60
-  practiceStore.examDuration = (counts.duration || 45) * 60
-  practiceStore.examTitle = examTitle
-  practiceStore.isExamActive = true
-  practiceStore.startTimer()
+    // 载入考场并启动
+    practiceStore.practiceId = 'custom_' + Date.now()
+    practiceStore.currentSetId = selectedList[0]?.id || selectedList[0]?.categoryId || 1
+    practiceStore.questions = formattedQuestions
+    practiceStore.currentIndex = 0
+    practiceStore.userAnswers = {}
+    practiceStore.flagged = {}
+    practiceStore.timerSeconds = (counts.duration || 45) * 60
+    practiceStore.examDuration = (counts.duration || 45) * 60
+    practiceStore.examTitle = examTitle
+    practiceStore.isExamActive = true
+    practiceStore.startTimer()
+  } catch (err) {
+    console.error('generateSpecializedExam error:', err)
+    alert(err.message || '组卷服务异常，请重试')
+  } finally {
+    isBuildingExam.value = false
+    practiceStore.loadingExam = false
+  }
 }
 
 // 自定义组合出卷提交入口
@@ -1344,10 +1320,18 @@ async function handleStartCustomExam() {
 async function handleStartRandomExam() {
   practiceStore.loadingExam = true
   try {
-    // 综合自适应模考从各大核心方向均衡抽题
+    const assembleIds = ['101-2', '103-9', '107-25', '302-73', '503-137']
+    try {
+      const addRes = await addPractice(assembleIds)
+      if (addRes && addRes.success && addRes.data?.setId) {
+        await practiceStore.startExamBySet(addRes.data.setId)
+        return
+      }
+    } catch (_) {}
+
+    // 综合自适应模考从各大核心方向均衡真实抽题
     const coreCats = [
       { id: 101, categoryId: 101, name: '计算机科学基础', categoryName: '计算机科学基础', primaryId: 1, primaryName: '通用技术' },
-      { id: 102, categoryId: 102, name: '算法与数据结构', categoryName: '算法与数据结构', primaryId: 1, primaryName: '通用技术' },
       { id: 103, categoryId: 103, name: 'SQL', categoryName: 'SQL', primaryId: 1, primaryName: '通用技术' },
       { id: 107, categoryId: 107, name: '网络与 HTTP', categoryName: '网络与 HTTP', primaryId: 1, primaryName: '通用技术' },
       { id: 302, categoryId: 302, name: 'Java', categoryName: 'Java', primaryId: 3, primaryName: '后端开发' },
@@ -1373,6 +1357,17 @@ async function handleStartCategoryExam(cat) {
   isBuildingExam.value = true
   practiceStore.loadingExam = true
   try {
+    const catAssembleIds = (cat.labelList || []).map((l) => l.assembleId).filter(Boolean)
+    if (catAssembleIds.length > 0) {
+      try {
+        const addRes = await addPractice(catAssembleIds)
+        if (addRes && addRes.success && addRes.data?.setId) {
+          await practiceStore.startExamBySet(addRes.data.setId)
+          return
+        }
+      } catch (_) {}
+    }
+
     const targetCats = [{
       id: cat.categoryId || cat.id,
       categoryId: cat.categoryId || cat.id,
@@ -1403,6 +1398,17 @@ async function handleStartLabelExam(cat, lbl) {
   isBuildingExam.value = true
   practiceStore.loadingExam = true
   try {
+    const assembleId = lbl.assembleId || `${cat.categoryId || cat.id}-${lbl.id || lbl.labelId}`
+    if (assembleId) {
+      try {
+        const addRes = await addPractice([assembleId])
+        if (addRes && addRes.success && addRes.data?.setId) {
+          await practiceStore.startExamBySet(addRes.data.setId)
+          return
+        }
+      } catch (_) {}
+    }
+
     const targetCats = [{
       id: cat.categoryId || cat.id,
       categoryId: cat.categoryId || cat.id,
@@ -3775,13 +3781,7 @@ onMounted(async () => {
 }
 
 :deep(.parse-body .ans-img-fallback) {
-  display: inline-block;
-  padding: 6px 14px;
-  background: #f4f4f5;
-  color: #737373;
-  font-size: 12px;
-  border-radius: 4px;
-  border: 1px dashed #d1d5db;
+  display: none !important;
 }
 
 :deep(.parse-body .ans-link) {

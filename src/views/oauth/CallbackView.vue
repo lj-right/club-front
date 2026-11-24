@@ -9,7 +9,7 @@
 
       <div v-else-if="success" class="state-success">
         <div class="icon-circle success">✓</div>
-        <h3>授权成功，正在进入随风 Club！</h3>
+        <h3>授权成功，正在进入烤面筋！</h3>
         <p>欢迎你，{{ authStore.nickname }}</p>
       </div>
 

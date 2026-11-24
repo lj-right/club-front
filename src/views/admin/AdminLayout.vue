@@ -50,7 +50,7 @@
       <aside class="admin-sidebar" :class="{ collapsed: isSidebarCollapsed }">
         <div class="sidebar-brand" @click="$router.push('/home')">
           <div v-if="!isSidebarCollapsed" class="brand-text">
-            <span class="brand-main">随风 Club</span>
+            <span class="brand-main">烤面筋</span>
           </div>
         </div>
 

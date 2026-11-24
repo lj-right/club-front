@@ -1,6 +1,52 @@
 <template>
   <div class="view-container">
     <div class="circle-page-wrapper">
+      <!-- 左侧：圈子热议 -->
+      <aside class="circle-sidebar-left">
+        <div class="sidebar-card hot-discussions-card">
+          <div class="sidebar-header">
+            <h3 class="sidebar-title">
+              <span class="hot-flame-icon">🔥</span>
+              <span>圈子热议</span>
+            </h3>
+            <span class="hot-badge-tag">HOT</span>
+          </div>
+
+          <!-- 热议动态列表 -->
+          <div v-if="hotMoments.length > 0" class="hot-moment-list">
+            <div
+              v-for="(m, idx) in hotMoments"
+              :key="m.id"
+              class="hot-moment-item"
+              @click="goToDetail(m.id)"
+            >
+              <div class="hot-moment-top">
+                <span
+                  class="hot-rank-badge"
+                  :class="{ 'rank-1': idx === 0, 'rank-2': idx === 1, 'rank-3': idx === 2 }"
+                >
+                  {{ idx + 1 }}
+                </span>
+                <img
+                  :src="m.avatar || defaultAvatar"
+                  class="hot-avatar"
+                  alt="avatar"
+                  @error="(e) => handleAvatarError(e, m.author)"
+                />
+                <span class="hot-author" :title="m.author">{{ m.author }}</span>
+                <span class="hot-channel">#{{ m.channelName }}</span>
+              </div>
+              <p class="hot-content">{{ m.content }}</p>
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div v-else class="hot-empty">
+            <span class="hot-empty-text">暂无热议动态</span>
+          </div>
+        </div>
+      </aside>
+
       <!-- 动态流主体 -->
       <div class="circle-main">
         <!-- 频道导航栏与发帖操作 -->
@@ -139,19 +185,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCircleStore } from '@/stores/circle'
 import { useAuthStore } from '@/stores/auth'
 import { getUserAvatar } from '@/utils/avatars'
+import defaultAvatarImg from '@/assets/default_avatar.jpg'
 
 const route = useRoute()
 const router = useRouter()
 const circleStore = useCircleStore()
 const authStore = useAuthStore()
 
-const defaultAvatar = 'http://127.0.0.1:9005/user/avatar/default_avatar.jpg'
+const defaultAvatar = defaultAvatarImg
 const expandedMoments = ref(new Set())
+const allMomentsCache = ref([])
+
+// 计算圈子热议列表：优先按点赞数与评论数综合热度降序，展示 Top 5 高频讨论
+const hotMoments = computed(() => {
+  const pool = allMomentsCache.value.length ? allMomentsCache.value : circleStore.moments
+  return [...pool]
+    .sort((a, b) => {
+      const heatA = (a.likes || 0) * 2 + (getCommentCount(a) || 0) * 3
+      const heatB = (b.likes || 0) * 2 + (getCommentCount(b) || 0) * 3
+      if (heatB !== heatA) return heatB - heatA
+      return (b.id || 0) - (a.id || 0)
+    })
+    .slice(0, 5)
+})
 
 function toggleExpand(id) {
   if (expandedMoments.value.has(id)) {
@@ -189,9 +250,9 @@ async function handleDeleteMoment(momentId) {
 }
 
 function handleAvatarError(e, name) {
-  const fallback = getUserAvatar(name)
-  if (e.target.src !== fallback) {
-    e.target.src = fallback
+  if (e?.target) {
+    e.target.onerror = null
+    e.target.src = defaultAvatarImg
   }
 }
 
@@ -226,14 +287,190 @@ onMounted(async () => {
 
   await circleStore.fetchCircles()
   await circleStore.fetchMoments()
+  if (circleStore.moments?.length) {
+    allMomentsCache.value = [...circleStore.moments]
+  }
   await circleStore.checkUnread()
 })
 </script>
 
 <style scoped>
 .circle-page-wrapper {
-  max-width: 820px;
+  max-width: 1160px;
   margin: 0 auto;
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.circle-sidebar-left {
+  position: sticky;
+  top: 76px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hot-discussions-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.hot-flame-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.hot-badge-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ff4d4f;
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+html.dark .hot-badge-tag {
+  background: rgba(255, 77, 79, 0.15);
+  border-color: rgba(255, 77, 79, 0.35);
+  color: #ff7875;
+}
+
+.hot-moment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hot-moment-item {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hot-moment-item:hover {
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+}
+
+.hot-moment-item:last-child {
+  border-bottom: none;
+}
+
+.hot-moment-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.hot-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.hot-rank-badge.rank-1 {
+  background: #ff4d4f;
+  color: #ffffff;
+}
+
+.hot-rank-badge.rank-2 {
+  background: #ff7a45;
+  color: #ffffff;
+}
+
+.hot-rank-badge.rank-3 {
+  background: #ffa940;
+  color: #ffffff;
+}
+
+.hot-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.hot-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hot-channel {
+  font-size: 11px;
+  color: var(--primary);
+  font-weight: 500;
+  margin-left: auto;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hot-content {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-all;
+}
+
+.hot-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.circle-main {
+  min-width: 0;
 }
 
 .circle-header-bar {
@@ -496,5 +733,15 @@ onMounted(async () => {
 .m-action-btn.liked {
   color: #ef4444;
   font-weight: 600;
+}
+
+@media (max-width: 960px) {
+  .circle-page-wrapper {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .circle-sidebar-left {
+    position: static;
+  }
 }
 </style>

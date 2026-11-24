@@ -180,6 +180,20 @@
       user-select: none;
     }
 
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      object-fit: contain;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .brand-section:hover .brand-logo {
+      transform: rotate(6deg) scale(1.08);
+    }
+
     .duck-logo {
       width: 36px;
       height: 36px;
@@ -2062,15 +2076,7 @@
     }
 
     .ans-img-fallback {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      background: #f8fafc;
-      color: var(--text-muted);
-      font-size: 12.5px;
-      border-radius: 6px;
-      border: 1px dashed var(--border-color);
+      display: none !important;
     }
 
 /* ==========================================================================

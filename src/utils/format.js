@@ -70,7 +70,7 @@ export function formatAnswer(text) {
     const captionHtml = safeAlt ? `<div class="ans-img-caption">${safeAlt}</div>` : ''
     return `<div class="ans-img-wrap" data-img-wrap="true">` +
       `<div class="ans-img-inner">` +
-        `<img src="${src}" alt="${safeAlt || '解析配图'}" class="ans-img" data-previewable="true" title="点击查看大图" loading="lazy" onerror="this.onerror=null;const w=this.closest('.ans-img-wrap');if(w){w.innerHTML='<span class=\\'ans-img-fallback\\'>📊 解析架构图示 (MinIO)</span>'}" />` +
+        `<img src="${src}" alt="${safeAlt || '解析配图'}" class="ans-img" data-previewable="true" title="点击查看大图" loading="lazy" onerror="this.onerror=null;const w=this.closest('.ans-img-wrap');if(w){w.remove()}else{this.remove()}" />` +
         `<span class="ans-img-zoom-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> 点击放大</span>` +
       `</div>` +
       captionHtml +
@@ -83,7 +83,11 @@ export function formatAnswer(text) {
   // 5. Blockquote: > text
   html = html.replace(/^\s*&gt;\s+(.*$)/gim, '<blockquote class="ans-quote">$1</blockquote>')
 
-  // 6. Headings: ###, ##, #
+  // 5.1 Horizontal Rule: ---, ***, ___
+  html = html.replace(/^\s*(?:---|\*\*\*|___)\s*$/gim, '<hr class="ans-hr">')
+
+  // 6. Headings: ####, ###, ##, #
+  html = html.replace(/^#### (.*$)/gim, '<div class="ans-h4">$1</div>')
   html = html.replace(/^### (.*$)/gim, '<div class="ans-h3">$1</div>')
   html = html.replace(/^## (.*$)/gim, '<div class="ans-h2">$1</div>')
   html = html.replace(/^# (.*$)/gim, '<div class="ans-h1">$1</div>')
@@ -95,7 +99,7 @@ export function formatAnswer(text) {
   html = html.replace(/`([^`\r\n]{1,120})`/g, '<code class="md-code">$1</code>')
 
   // 9. Bullets: - text
-  html = html.replace(/^\s*-\s+(.*$)/gim, '<div class="ans-li"><span class="li-dot">•</span> <span>$1</span></div>')
+  html = html.replace(/^\s*[-*]\s+(.*$)/gim, '<div class="ans-li"><span class="li-dot">•</span> <span>$1</span></div>')
 
   // 10. Numbered lists: 1. text
   html = html.replace(/^\s*(\d+)\.\s+(.*$)/gim, '<div class="ans-ol"><span class="ol-num">$1.</span> <span>$2</span></div>')
@@ -108,6 +112,7 @@ export function formatAnswer(text) {
   html = html.replace(/<\/div><br>/g, '</div>')
   html = html.replace(/<\/blockquote><br>/g, '</blockquote>')
   html = html.replace(/<\/table><\/div><br>/g, '</table></div>')
+  html = html.replace(/<hr class="ans-hr"><br>/g, '<hr class="ans-hr">')
 
   // 12. 还原多行代码块
   html = html.replace(/___CODE_BLOCK_(\d+)___/g, (_, idx) => {

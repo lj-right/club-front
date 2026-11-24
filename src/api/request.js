@@ -2,12 +2,15 @@ import axios from 'axios'
 
 const request = axios.create({
   baseURL: '/api',
-  timeout: 15000
+  timeout: 180000 // 默认全局超时放宽至 180 秒 (3分钟)，确保大模型推理、简历解析与 CLI 考官充分作答
 })
 
 // Request Interceptor: Attach Sa-Token
 request.interceptors.request.use(
   (config) => {
+    // 强制全局任何请求超时都不低于 180 秒，彻底杜绝 15000ms 超时中断
+    config.timeout = Math.max(config.timeout || 0, 180000)
+
     // Priority: Explicit header > adminToken (if on admin route /base) > token > adminToken fallback
     if (!config.headers['satoken']) {
       const adminToken = localStorage.getItem('adminToken')

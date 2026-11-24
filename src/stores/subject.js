@@ -12,36 +12,170 @@ import {
 import { formatQuestionTimeAgo } from '@/utils/format'
 
 const PRIMARY_NAME_TO_ID = {
-  general: 1,
-  '通用技术': 1,
+  backend: 1,
+  '后端开发': 1,
   frontend: 2,
   '前端开发': 2,
-  backend: 3,
-  '后端开发': 3,
-  mobile: 4,
-  '移动端开发': 4,
-  database: 5,
-  '数据库技术': 5,
-  devops: 6,
-  '云原生与 DevOps': 6,
-  architecture: 7,
-  '系统架构': 7,
-  ai: 8,
-  'AI 与机器学习': 8,
-  career: 9,
-  '职业素养': 9
+  bigdata: 3,
+  '大数据与数仓': 3,
+  algorithm: 4,
+  '算法与数据结构': 4,
+  architecture: 5,
+  '高并发系统架构': 5,
+  mobile: 6,
+  '移动端开发': 6,
+  qa: 7,
+  '测试与质量保障': 7,
+  devops: 8,
+  '运维与DevOps': 8,
+  ai: 9,
+  '人工智能与大模型': 9,
+  cloudnative: 10,
+  '云原生与微服务': 10
 }
 
 const DEFAULT_PRIMARIES = [
-  { id: 1, name: '通用技术', dbId: 1 },
+  { id: 1, name: '后端开发', dbId: 1 },
   { id: 2, name: '前端开发', dbId: 2 },
-  { id: 3, name: '后端开发', dbId: 3 },
-  { id: 4, name: '移动端开发', dbId: 4 },
-  { id: 5, name: '数据库技术', dbId: 5 },
-  { id: 6, name: '云原生与 DevOps', dbId: 6 },
-  { id: 7, name: '系统架构', dbId: 7 },
-  { id: 8, name: 'AI 与机器学习', dbId: 8 },
-  { id: 9, name: '职业素养', dbId: 9 }
+  { id: 3, name: '大数据与数仓', dbId: 3 },
+  { id: 4, name: '算法与数据结构', dbId: 4 },
+  { id: 5, name: '高并发系统架构', dbId: 5 },
+  { id: 6, name: '移动端开发', dbId: 6 },
+  { id: 7, name: '测试与质量保障', dbId: 7 },
+  { id: 8, name: '运维与DevOps', dbId: 8 },
+  { id: 9, name: '人工智能与大模型', dbId: 9 },
+  { id: 10, name: '云原生与微服务', dbId: 10 }
+]
+
+const GLOBAL_SUBJECT_MOCK_POOL = [
+  {
+    id: 1,
+    title: '在Java中，HashMap在JDK 1.8中的底层数据结构是以下哪种组合？',
+    primaryCategoryId: 1,
+    primaryCategoryName: '后端开发',
+    categoryId: 101,
+    categoryName: 'Java基础',
+    labelId: 1,
+    labelName: '集合框架',
+    labels: ['集合框架'],
+    categoryNames: ['Java基础'],
+    difficulty: 'easy',
+    type: '单选题',
+    summary: 'JDK 1.8 中 HashMap 采用数组+链表+红黑树实现，当链表长度大于8且数组容量大于等于64时树化。',
+    answer: 'JDK 1.8 中 HashMap 采用数组+链表+红黑树实现，当链表长度大于8且数组容量大于等于64时树化。'
+  },
+  {
+    id: 2,
+    title: '下列关于 Java 垃圾回收（GC）垃圾收集器的说法，哪些是正确的？',
+    primaryCategoryId: 1,
+    primaryCategoryName: '后端开发',
+    categoryId: 102,
+    categoryName: 'JVM原理',
+    labelId: 3,
+    labelName: '垃圾回收GC',
+    labels: ['垃圾回收GC'],
+    categoryNames: ['JVM原理'],
+    difficulty: 'medium',
+    type: '多选题',
+    summary: 'CMS收集器以获取最短回收停顿时间为目标，基于标记-清除算法；G1将堆划分为多个等大的Region；ZGC采用着色指针和读屏障技术。',
+    answer: 'CMS收集器以获取最短回收停顿时间为目标，基于标记-清除算法；G1将堆划分为多个等大的Region；ZGC采用着色指针和读屏障技术。'
+  },
+  {
+    id: 3,
+    title: 'MySQL中的InnoDB存储引擎，默认的事务隔离级别是可重复读（Repeatable Read）。',
+    primaryCategoryId: 1,
+    primaryCategoryName: '后端开发',
+    categoryId: 104,
+    categoryName: 'MySQL数据库',
+    labelId: 8,
+    labelName: '事务与MVCC',
+    labels: ['事务与MVCC'],
+    categoryNames: ['MySQL数据库'],
+    difficulty: 'easy',
+    type: '判断题',
+    summary: 'InnoDB默认隔离级别为REPEATABLE READ，并通过Next-Key Lock锁算法在很大程度上解决了幻读问题。',
+    answer: 'InnoDB默认隔离级别为REPEATABLE READ，并通过Next-Key Lock锁算法在很大程度上解决了幻读问题。'
+  },
+  {
+    id: 4,
+    title: '请简述 Spring 中 Bean 的生命周期流程。',
+    primaryCategoryId: 1,
+    primaryCategoryName: '后端开发',
+    categoryId: 103,
+    categoryName: 'Spring生态',
+    labelId: 5,
+    labelName: 'IOC与AOP',
+    labels: ['IOC与AOP'],
+    categoryNames: ['Spring生态'],
+    difficulty: 'hard',
+    type: '简答题',
+    summary: '生命周期核心步骤包括：实例化(Instantiation) -> 属性赋值(Populate) -> Aware接口回调 -> BeanPostProcessor前置处理 -> 初始化(InitializingBean/init-method) -> BeanPostProcessor后置处理 -> 投入使用 -> 销毁(DisposableBean)。',
+    answer: '生命周期核心步骤包括：实例化(Instantiation) -> 属性赋值(Populate) -> Aware接口回调 -> BeanPostProcessor前置处理 -> 初始化(InitializingBean/init-method) -> BeanPostProcessor后置处理 -> 投入使用 -> 销毁(DisposableBean)。'
+  },
+  {
+    id: 5,
+    title: '在多线程编程中，volatile 关键字能够保证什么特性？',
+    primaryCategoryId: 1,
+    primaryCategoryName: '后端开发',
+    categoryId: 106,
+    categoryName: '多线程与并发',
+    labelId: 10,
+    labelName: 'AQS与Lock',
+    labels: ['AQS与Lock'],
+    categoryNames: ['多线程与并发'],
+    difficulty: 'medium',
+    type: '单选题',
+    summary: 'volatile 保证线程间的变量可见性并禁止指令重排序，但不保证复合操作的原子性。',
+    answer: 'volatile 保证线程间的变量可见性并禁止指令重排序，但不保证复合操作的原子性。'
+  },
+  {
+    id: 6,
+    title: 'Redis 缓存穿透、缓存击穿与缓存雪崩的核心区别与对应解决方案是什么？',
+    primaryCategoryId: 1,
+    primaryCategoryName: '后端开发',
+    categoryId: 105,
+    categoryName: 'Redis缓存',
+    labelId: 9,
+    labelName: '缓存穿透与击穿',
+    labels: ['缓存穿透与击穿'],
+    categoryNames: ['Redis缓存'],
+    difficulty: 'medium',
+    type: '简答题',
+    summary: '穿透：请求不存在的数据，用布隆过滤器或缓存空对象；击穿：热点Key瞬间失效高并发打崩DB，加互斥锁或逻辑永不过期；雪崩：大量Key同时过期，加随机TTL或Redis集群高可用。',
+    answer: '穿透：请求不存在的数据，用布隆过滤器或缓存空对象；击穿：热点Key瞬间失效高并发打崩DB，加互斥锁或逻辑永不过期；雪崩：大量Key同时过期，加随机TTL或Redis集群高可用。'
+  },
+  {
+    id: 7,
+    title: 'Vue 3 的响应式原理与 Vue 2 的 Object.defineProperty 相比有哪些核心优势？',
+    primaryCategoryId: 2,
+    primaryCategoryName: '前端开发',
+    categoryId: 201,
+    categoryName: 'Vue.js生态',
+    labelId: 21,
+    labelName: '响应式原理',
+    labels: ['响应式原理'],
+    categoryNames: ['Vue.js生态'],
+    difficulty: 'medium',
+    type: '简答题',
+    summary: 'Vue 3 采用 ES6 Proxy 代理整个对象，天然支持属性动态增删以及数组索引与长度变化的监听，且无需在初始化时深度递归遍历所有属性，性能与内存占用大幅优化。',
+    answer: 'Vue 3 采用 ES6 Proxy 代理整个对象，天然支持属性动态增删以及数组索引与长度变化的监听，且无需在初始化时深度递归遍历所有属性，性能与内存占用大幅优化。'
+  },
+  {
+    id: 8,
+    title: '如何设计一个高可用的分布式锁？基于 Redis Redlock 算法有哪些关键权衡？',
+    primaryCategoryId: 5,
+    primaryCategoryName: '高并发系统架构',
+    categoryId: 501,
+    categoryName: '分布式组件',
+    labelId: 51,
+    labelName: '分布式锁',
+    labels: ['分布式锁'],
+    categoryNames: ['分布式组件'],
+    difficulty: 'hard',
+    type: '简答题',
+    summary: 'Redlock 算法在多独立 Redis 节点上按序获取锁，当半数以上节点成功且耗时小于有效时间时判定加锁成功。权衡点在于时钟漂移、GC 暂停引发的安全性问题，需配合看门狗自动续期。',
+    answer: 'Redlock 算法在多独立 Redis 节点上按序获取锁，当半数以上节点成功且耗时小于有效时间时判定加锁成功。权衡点在于时钟漂移、GC 暂停引发的安全性问题，需配合看门狗自动续期。'
+  }
 ]
 
 function formatViews(num) {
@@ -96,7 +230,10 @@ export const useSubjectStore = defineStore('subject', {
     searchResults: [],
 
     // 出题贡献榜
-    contributeList: []
+    contributeList: [],
+
+    // 搜索定位专属高亮题目ID (用于题库列表平滑滚动与聚焦高亮)
+    highlightedSubjectId: null
   }),
   getters: {
     currentSubCategoryList: (state) => {
@@ -578,8 +715,14 @@ export const useSubjectStore = defineStore('subject', {
               title: d.subjectName ? d.subjectName.replace(/<[^>]+>/g, '') : '',
               highlightTitle: d.subjectName || '',
               difficulty: diffMap[d.subjectDifficult] || 'medium',
-              labels: d.labelNames && d.labelNames.length > 0 ? d.labelNames : ['核心考点'],
-              categoryNames: d.categoryNames || [],
+              labels: d.labelNames && d.labelNames.length > 0 ? d.labelNames : (d.labelName ? [d.labelName] : ['核心考点']),
+              categoryNames: d.categoryNames || (d.categoryName ? [d.categoryName] : []),
+              primaryCategoryId: d.primaryCategoryId,
+              primaryCategoryName: d.primaryCategoryName,
+              categoryId: d.categoryId,
+              categoryName: d.categoryName,
+              labelId: d.labelId,
+              labelName: d.labelName,
               company: ['大厂真题'],
               answer: d.subjectAnswer || '',
               summary: d.subjectParse || d.subjectAnswer || '',
@@ -589,19 +732,46 @@ export const useSubjectStore = defineStore('subject', {
           return
         }
       } catch (err) {
-        console.warn('Backend search error, falling back to local filter:', err)
+        console.warn('Backend search error, falling back to global mock pool:', err)
       }
 
-      // 降级回退：本地内存模糊搜索
-      const qLower = query.toLowerCase()
-      this.searchResults = this.questions.filter((item) => {
-        return (
-          item.title.toLowerCase().includes(qLower) ||
-          (item.label && item.label.toLowerCase().includes(qLower)) ||
-          (item.tags || []).some((l) => l.toLowerCase().includes(qLower)) ||
-          (item.author && item.author.toLowerCase().includes(qLower))
-        )
-      })
+      // 降级回退：全题库多维检索（覆盖所有一级职位、二级技术栈、三级知识点标签，支持无约束任意搜）
+      const qLower = query.toLowerCase().trim()
+      const searchPool = [...GLOBAL_SUBJECT_MOCK_POOL, ...this.questions]
+      const seenIds = new Set()
+      const uniquePool = []
+      for (const item of searchPool) {
+        if (!seenIds.has(item.id)) {
+          seenIds.add(item.id)
+          uniquePool.push(item)
+        }
+      }
+
+      this.searchResults = uniquePool
+        .filter((item) => {
+          return (
+            (item.title && item.title.toLowerCase().includes(qLower)) ||
+            (item.primaryCategoryName && item.primaryCategoryName.toLowerCase().includes(qLower)) ||
+            (item.categoryName && item.categoryName.toLowerCase().includes(qLower)) ||
+            (item.labelName && item.labelName.toLowerCase().includes(qLower)) ||
+            (item.labels || []).some((l) => l.toLowerCase().includes(qLower)) ||
+            (item.categoryNames || []).some((c) => c.toLowerCase().includes(qLower)) ||
+            (item.summary && item.summary.toLowerCase().includes(qLower)) ||
+            (item.answer && item.answer.toLowerCase().includes(qLower))
+          )
+        })
+        .map((item) => {
+          // 高亮匹配关键字
+          let highlightTitle = item.title
+          if (highlightTitle) {
+            const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+            highlightTitle = highlightTitle.replace(regex, '<b style="color:red">$&</b>')
+          }
+          return {
+            ...item,
+            highlightTitle
+          }
+        })
     },
 
     async fetchContributeList() {
@@ -613,6 +783,154 @@ export const useSubjectStore = defineStore('subject', {
       } catch (err) {
         console.warn('Failed to fetch contribute list:', err)
       }
+    },
+
+    /**
+     * 核心业务：搜索框定位重构（反向穿透定位）
+     * 消除必须在指定标签中搜索的限制：支持全站任意检索，并在选中题目后精准定位到对应一级职位、二级技能分类、三级知识点胶囊及目标卡片
+     */
+    async locateSubjectInCategory(item, router) {
+      if (!item) return
+
+      // 1. 记录待高亮定位的目标题目ID
+      this.highlightedSubjectId = item.id
+
+      // 2. 路由跳转到题库页面
+      if (router && router.currentRoute.value.path !== '/subject') {
+        await router.push('/subject')
+      }
+
+      // 3. 确保一级分类已初始化
+      if (!this.primaryCategories || this.primaryCategories.length === 0) {
+        await this.fetchCategories()
+      }
+
+      // 4. 解析目标题目的一级职位ID、二级技能ID、三级标签名
+      let targetPrimaryId = item.primaryCategoryId
+      let targetSubId = item.categoryId
+      let targetLabelName = item.labelName
+
+      const targetCatNames = Array.isArray(item.categoryNames) ? item.categoryNames : []
+      const targetLabels = Array.isArray(item.labels) ? item.labels : []
+      const subCatName = item.categoryName || targetCatNames[0] || ''
+      const lblName = targetLabelName || targetLabels[0] || ''
+
+      // 若未直接提供数值 ID，通过职位与二级分类名称智能反查
+      if (!targetPrimaryId || !targetSubId) {
+        // 先在当前一级岗位下尝试查找二级技能
+        let currentSubs = this.currentSubCategoryList || []
+        let foundSub = currentSubs.find(
+          (s) => s.name && (s.name.includes(subCatName) || subCatName.includes(s.name))
+        )
+
+        if (foundSub) {
+          targetPrimaryId = this.currentPrimaryId
+          targetSubId = foundSub.id
+        } else {
+          // 遍历全量岗位查找所属技能
+          for (const p of this.primaryCategories) {
+            const pId = p.dbId || p.id
+            let subs = this.subCategories[pId]
+            if (!subs || subs.length === 0) {
+              try {
+                const subRes = await queryCategoryByPrimary(pId, 2)
+                if (subRes && subRes.success && Array.isArray(subRes.data)) {
+                  subs = subRes.data.map((s) => ({
+                    id: s.id,
+                    dbId: s.id,
+                    name: s.categoryName,
+                    count: s.count || 0
+                  }))
+                  this.subCategories[pId] = subs
+                }
+              } catch (_) {}
+            }
+            if (subs && subs.length > 0) {
+              const matched = subs.find(
+                (s) => s.name && (s.name.includes(subCatName) || subCatName.includes(s.name))
+              )
+              if (matched) {
+                targetPrimaryId = pId
+                targetSubId = matched.id
+                break
+              }
+            }
+          }
+        }
+      }
+
+      // 5. 切换一级职位 (Job Role)
+      if (targetPrimaryId && targetPrimaryId !== this.currentPrimaryId) {
+        this.currentPrimaryId = targetPrimaryId
+        await this.loadSubCategoriesForCurrentPrimary()
+      }
+
+      // 6. 切换二级分类 (Skill & Middleware)
+      if (targetSubId) {
+        this.currentSubId = targetSubId
+      }
+
+      // 7. 切换三级知识点标签 (Knowledge Point Label)
+      const activeSub = this.activeSubCategory
+      if (activeSub && Array.isArray(activeSub.labels) && activeSub.labels.length > 0) {
+        const foundLbl = activeSub.labels.find(
+          (l) => lblName && (l.includes(lblName) || lblName.includes(l))
+        )
+        if (foundLbl) {
+          this.selectedLabels = [foundLbl]
+        } else {
+          this.selectedLabels = []
+        }
+      } else {
+        this.selectedLabels = []
+      }
+
+      // 8. 刷新题库题目列表
+      this.pageNo = 1
+      await this.fetchSubjectPage()
+
+      // 9. 保证目标考题在当前题目列表中必现（若在后面的页码，将其置顶以便视觉焦点定位）
+      const existsIndex = this.questions.findIndex((q) => q.id === item.id)
+      if (existsIndex === -1) {
+        const summaryText = (item.summary || item.answer || '').trim()
+        const diffText = item.difficulty === 'easy' ? '简单' : item.difficulty === 'hard' ? '困难' : '中等'
+        const rawTime = item.updateTime || item.updatedTime || item.createTime || ''
+        this.questions.unshift({
+          id: item.id,
+          title: item.title || (item.highlightTitle ? item.highlightTitle.replace(/<[^>]+>/g, '') : '高频真题'),
+          primaryCat: this.currentPrimaryId,
+          subCat: this.currentSubId,
+          difficulty: diffText,
+          diffCode: item.difficulty === 'easy' ? 1 : item.difficulty === 'hard' ? 3 : 2,
+          type: item.type || '简答题',
+          views: '1.2k',
+          readCount: 1200,
+          timeAgo: formatTimeAgo(rawTime, item.id),
+          author: item.author || '随风',
+          summary: summaryText,
+          answer: summaryText,
+          label: lblName || '核心考点',
+          labels: item.labels && item.labels.length > 0 ? item.labels : [lblName || '核心考点'],
+          tags: item.labels && item.labels.length > 0 ? item.labels : [lblName || '核心考点'],
+          solutionHtml: summaryText
+        })
+        this.totalQuestions = (this.totalQuestions || 0) + 1
+      }
+
+      // 10. 平滑滚动并高亮至视口中央
+      setTimeout(() => {
+        const el = document.getElementById(`subject-q-${item.id}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 200)
+
+      // 11. 保持高亮动画 3.5 秒
+      setTimeout(() => {
+        if (this.highlightedSubjectId === item.id) {
+          this.highlightedSubjectId = null
+        }
+      }, 3500)
     }
   }
 })

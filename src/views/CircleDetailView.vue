@@ -287,13 +287,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCircleStore } from '@/stores/circle'
 import { useAuthStore } from '@/stores/auth'
 import { getUserAvatar } from '@/utils/avatars'
+import defaultAvatarImg from '@/assets/default_avatar.jpg'
 
 const route = useRoute()
 const router = useRouter()
 const circleStore = useCircleStore()
 const authStore = useAuthStore()
 
-const defaultAvatar = 'http://127.0.0.1:9000/user/avatar/default_avatar.jpg'
+const defaultAvatar = defaultAvatarImg
 
 const momentId = computed(() => Number(route.params.id || route.query.id))
 const moment = ref(null)
@@ -348,9 +349,9 @@ async function handleDeleteReply(replyId) {
 }
 
 function handleAvatarError(e, name) {
-  const fallback = getUserAvatar(name)
-  if (e.target.src !== fallback) {
-    e.target.src = fallback
+  if (e?.target) {
+    e.target.onerror = null
+    e.target.src = defaultAvatarImg
   }
 }
 

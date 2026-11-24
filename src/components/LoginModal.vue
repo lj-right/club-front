@@ -7,16 +7,15 @@
         </button>
       </div>
 
-      <div class="duck-logo" style="margin: 0 auto 12px; width: 44px; height: 44px; border-radius: 10px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2C7.58 2 4 5.58 4 10C4 12.38 5.05 14.51 6.71 15.97C6.26 16.59 5.67 17.07 5 17.4C6.54 17.9 8.23 18.15 10 18.06V20C10 20.55 10.45 21 11 21H13C13.55 21 14 20.55 14 20V18C15.8 17.86 17.49 17.44 19 16.7C18.33 16.37 17.74 15.89 17.29 15.27C18.95 13.81 20 11.68 20 10C20 5.58 16.42 2 12 2Z" fill="#ffffff"></path>
-          <circle cx="9" cy="9" r="1.5" fill="#1e293b"></circle>
-          <path d="M11 12C12.5 12 15 13 14 15C13 16 10 15 9.5 13.5" stroke="#ff7a45" stroke-width="2" stroke-linecap="round"></path>
-        </svg>
-      </div>
+      <img
+        src="/logo.png"
+        alt="烤面筋"
+        class="login-modal-logo logo-img"
+        style="display: block; margin: 0 auto 12px; width: 48px; height: 48px; border-radius: 12px; object-fit: contain; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);"
+      />
 
       <h3 style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
-        欢迎登录随风 Club
+        欢迎登录烤面筋
       </h3>
       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
         关注公众号回复“验证码”，或选择快捷第三方账号登录
@@ -25,7 +24,7 @@
       <!-- 微信登录二维码容器 -->
       <div class="qr-container">
         <div class="qr-mock-box">
-          <div class="qr-center-logo">随风</div>
+          <div class="qr-center-logo">烤面筋</div>
         </div>
       </div>
 

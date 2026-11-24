@@ -81,7 +81,7 @@
             @click="handleMessageClick(msg)"
           >
             <div class="msg-avatar-wrap">
-              <img :src="msg.avatar" class="msg-avatar" alt="avatar" />
+              <img :src="msg.avatar || defaultAvatarImg" class="msg-avatar" alt="avatar" @error="handleAvatarError" />
               <span class="unread-dot"></span>
             </div>
             <div class="msg-content-wrap">
@@ -128,7 +128,7 @@
             @click="handleMessageClick(msg)"
           >
             <div class="msg-avatar-wrap">
-              <img :src="msg.avatar" class="msg-avatar" alt="avatar" />
+              <img :src="msg.avatar || defaultAvatarImg" class="msg-avatar" alt="avatar" @error="handleAvatarError" />
             </div>
             <div class="msg-content-wrap">
               <div class="msg-header-line">
@@ -163,11 +163,19 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCircleStore } from '@/stores/circle'
 import { useAuthStore } from '@/stores/auth'
+import defaultAvatarImg from '@/assets/default_avatar.jpg'
 
 const emit = defineEmits(['close'])
 const router = useRouter()
 const circleStore = useCircleStore()
 const authStore = useAuthStore()
+
+function handleAvatarError(e) {
+  if (e?.target) {
+    e.target.onerror = null
+    e.target.src = defaultAvatarImg
+  }
+}
 
 const activeTab = ref('unread')
 const readScrollContainer = ref(null)
